@@ -80,11 +80,3 @@ PORT=5000
 JWT_SECRET=ymh354-secret-key
 HF_API_TOKEN=
 ```
-
-## Sunum Icin Okunacak Dosyalar
-
-- `docs/SUNUM_NOTLARI.md`: 10 dakikalik video/sunum konusma akisi
-- `docs/KUTUPHANE_HARITASI.md`: Hangi kutuphane nerede ve neden kullanildi
-- `docs/API-DOKUMANTASYON.md`: Endpointlerin aciklamasi
-- `docs/openapi.yaml`: OpenAPI formatindaki API dokumani
-- `docs/RAPOR-TASLAK.md`: PDF rapora cevrilebilecek rapor taslagi
