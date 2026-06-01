@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Klinik API
+  version: 1.0.0
+  description: YMH354 final projesi icin psikolog/danisan takip REST API dokumantasyonu.
+servers:
+  - url: http://localhost:5000/api
+paths:
+  /health:
+    get:
+      summary: API saglik kontrolu
+      responses:
+        "200":
+          description: API calisiyor
+  /auth/register:
+    post:
+      summary: Yeni kullanici/danisan kaydi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "201":
+          description: Token ve kullanici bilgisi doner
+  /auth/login:
+    post:
+      summary: Kullanici girisi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token ve kullanici bilgisi doner
+  /tasks:
+    get:
+      summary: Danisan takip kayitlarini listeler
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Takip kaydi listesi
+    post:
+      summary: Yeni danisan takip kaydi olusturur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordInput"
+      responses:
+        "201":
+          description: Olusturulan takip kaydi
+  /tasks/{id}:
+    patch:
+      summary: Takip kaydi gunceller
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Guncellenen takip kaydi
+    delete:
+      summary: Takip kaydi siler
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Silindi
+  /dashboard:
+    get:
+      summary: Dashboard metriklerini getirir
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Ozet, destek alani, oncelik/risk ve son kayit verileri
+  /ai/study-plan:
+    post:
+      summary: Server-side AI iyi olus destek plani uretir
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [goal, level, weeklyHours]
+              properties:
+                goal:
+                  type: string
+                level:
+                  type: string
+                  enum: [beginner, intermediate, advanced]
+                weeklyHours:
+                  type: number
+      responses:
+        "201":
+          description: Uretilen AI destek plani kaydi
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RecordInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+          example: Duygu Gunlugu
+        priority:
+          type: string
+          enum: [low, medium, high]
+        dueDate:
+          type: string
+        estimatedHours:
+          type: number

@@ -1,0 +1,38 @@
+[
+  {
+    "type": "instagram",
+    "name": "psk.sibeldomdomogullari",
+    "handle": "Psikolog Sibel Domdomoğulları",
+    "platform": "Instagram",
+    "profileUrl": "https://www.instagram.com/psk.sibeldomdomogullari/",
+    "accent": "#e1306c",
+    "avatar": "/social-media/instagram/instagramprofil.jpg",
+    "fallbackAvatar": "/social-media/instagram/instagramprofil.jpg",
+    "postCount": 181,
+    "cover": "Randevu • Reels • Psikoeğitim",
+    "subtitle": "Günlük psikoeğitim notları, reels içerikleri ve randevu duyuruları",
+    "items": [
+      {
+        "title": "Kaygının Tuzağına Neden Düşersin?",
+        "meta": "Reels",
+        "image": "/social-media/instagram/cover1.png",
+        "fallbackImage": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
+        "localVideo": "/social-media/instagram/video1.mp4"
+      },
+      {
+        "title": "Manipülasyon karşısında duruşumuz nasıl olmalıdır?",
+        "meta": "Reels",
+        "image": "/social-media/instagram/cover2.png",
+        "fallbackImage": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=80",
+        "localVideo": "/social-media/instagram/video2.mp4"
+      },
+      {
+        "title": "Toksik ilişki ve durumsal farkındalık",
+        "meta": "Reels",
+        "image": "/social-media/instagram/cover3.png",
+        "fallbackImage": "https://images.unsplash.com/photo-1526510747491-58f928ec870f?auto=format&fit=crop&w=900&q=80",
+        "localVideo": "/social-media/instagram/video3.mp4"
+      }
+    ]
+  }
+]

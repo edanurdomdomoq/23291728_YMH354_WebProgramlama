@@ -1,0 +1,12 @@
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+dist/
+server/data/db.json
+server/data/email-log.json
+.env
+*.env
+server/.env
+*.zip
+*.exe
