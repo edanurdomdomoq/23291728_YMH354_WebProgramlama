@@ -29,28 +29,34 @@ export async function sendMail({ to, subject, message, type }) {
   };
 
   if (smtpReady) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
 
-    await transporter.sendMail({
-      from: process.env.MAIL_FROM || process.env.SMTP_USER,
-      to,
-      subject,
-      text: message
-    });
+      await transporter.sendMail({
+        from: process.env.MAIL_FROM || process.env.SMTP_USER,
+        to,
+        subject,
+        text: message
+      });
 
-    entry.status = 'sent';
+      entry.status = 'sent';
+    } catch (error) {
+      entry.status = 'failed';
+      entry.error = error.message;
+    }
   }
 
   const log = await readLog();
   log.push(entry);
+  await fs.mkdir(path.dirname(emailLogPath), { recursive: true });
   await fs.writeFile(emailLogPath, JSON.stringify(log, null, 2));
   return entry;
 }

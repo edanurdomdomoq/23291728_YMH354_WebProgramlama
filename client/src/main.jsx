@@ -1089,7 +1089,15 @@ function Applications({ appointments, token, refresh }) {
                 <td>
                   {item.preferredDate || 'Belirtilmedi'} {item.preferredTime || ''}<br />
                   <em>{statusLabel(item.status)}</em>
-                  {item.mailDelivery && <small>Mail: {item.mailDelivery.status === 'sent' ? 'Gönderildi' : 'SMTP tanımlı değil'}</small>}
+                  {item.mailDelivery && (
+                    <small>
+                      Mail: {item.mailDelivery.status === 'sent'
+                        ? 'Gönderildi'
+                        : item.mailDelivery.status === 'failed'
+                          ? 'Mail hatası'
+                          : 'SMTP tanımlı değil'}
+                    </small>
+                  )}
                 </td>
                 <td className="table-actions">
                   <button className="success-button" disabled={busyId === item.id || item.status === 'approved'} onClick={() => updateStatus(item.id, 'approved')}>

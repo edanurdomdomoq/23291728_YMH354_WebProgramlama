@@ -190,6 +190,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   appointment.preferredTime = nextTime;
 
   if (appointment.status !== previousStatus) {
+    await writeDb(db);
     if (appointment.status === 'approved') {
       appointment.mailDelivery = await sendMail({
         to: appointment.email,
@@ -215,6 +216,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
         message: `Görüşmeniz tamamlandı. Deneyiminizi paylaşmak için: ${reviewUrl}`
       });
     }
+    await writeDb(db);
+    return res.json(appointment);
   }
 
   await writeDb(db);
