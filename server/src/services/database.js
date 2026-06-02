@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, '../../data/db.json');
 
 let pool;
+let ensuredDatabasePromise;
 
 const initialData = {
   users: [
@@ -208,6 +209,11 @@ async function ensurePostgresDatabase() {
     await writePostgresDb(initialData);
   } else {
     const current = await readPostgresDb();
+    const beforeCounts = {
+      services: current.services?.length || 0,
+      posts: current.posts?.length || 0,
+      users: current.users?.length || 0
+    };
     current.services = [
       ...(current.services || []),
       ...initialData.services.filter((seed) => !(current.services || []).some((item) => item.id === seed.id))
@@ -220,7 +226,13 @@ async function ensurePostgresDatabase() {
       ...(current.users || []),
       ...initialData.users.filter((seed) => !(current.users || []).some((item) => item.email === seed.email))
     ];
-    await writePostgresDb(current);
+    const changed =
+      (current.services?.length || 0) !== beforeCounts.services ||
+      (current.posts?.length || 0) !== beforeCounts.posts ||
+      (current.users?.length || 0) !== beforeCounts.users;
+    if (changed) {
+      await writePostgresDb(current);
+    }
   }
 }
 
@@ -401,11 +413,10 @@ async function writePostgresDb(data) {
 }
 
 export async function ensureDatabase() {
-  if (usesPostgres()) {
-    await ensurePostgresDatabase();
-    return;
+  if (!ensuredDatabasePromise) {
+    ensuredDatabasePromise = usesPostgres() ? ensurePostgresDatabase() : ensureJsonDatabase();
   }
-  await ensureJsonDatabase();
+  return ensuredDatabasePromise;
 }
 
 export async function readDb() {

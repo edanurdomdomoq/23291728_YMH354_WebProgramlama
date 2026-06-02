@@ -843,30 +843,44 @@ function AdminShell({ auth }) {
   const [adminServices, setAdminServices] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [aiResult, setAiResult] = useState(null);
+  const [refreshError, setRefreshError] = useState('');
   const token = auth.session.token;
 
   async function refresh() {
-    const [dashboardData, appointmentData, messageData, postData, serviceData, reviewData] = await Promise.all([
-      api('/dashboard', {}, token),
-      api('/appointments', {}, token),
-      api('/messages', {}, token),
-      api('/content/posts', {}, token),
-      api('/content/services', {}, token),
-      api('/content/reviews', {}, token)
-    ]);
-    setDashboard(dashboardData);
-    setAppointments(appointmentData);
-    setMessages(messageData);
-    setPosts(postData);
-    setAdminServices(serviceData);
-    setReviews(reviewData);
+    const requests = [
+      ['dashboard', api('/dashboard', {}, token)],
+      ['appointments', api('/appointments', {}, token)],
+      ['messages', api('/messages', {}, token)],
+      ['posts', api('/content/posts', {}, token)],
+      ['services', api('/content/services', {}, token)],
+      ['reviews', api('/content/reviews', {}, token)]
+    ];
+    const results = await Promise.allSettled(requests.map(([, request]) => request));
+    const setters = {
+      dashboard: setDashboard,
+      appointments: setAppointments,
+      messages: setMessages,
+      posts: setPosts,
+      services: setAdminServices,
+      reviews: setReviews
+    };
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        setters[requests[index][0]](result.value);
+      }
+    });
+
+    setRefreshError(results.some((result) => result.status === 'rejected')
+      ? 'Bazı veriler şu an geç yüklendi; panel kullanılabilir, yenileme otomatik devam ediyor.'
+      : '');
   }
 
   useEffect(() => {
     refresh();
     const timer = window.setInterval(refresh, 10000);
     return () => window.clearInterval(timer);
-  }, [view]);
+  }, []);
 
   const items = [
     ['overview', 'Genel Bakış', LayoutDashboard],
@@ -890,6 +904,7 @@ function AdminShell({ auth }) {
         <button onClick={auth.logout}><LogOut /> Çıkış</button>
       </aside>
       <section className="admin-content">
+        {refreshError && <p className="form-error">{refreshError}</p>}
         {view === 'overview' && <Overview dashboard={dashboard} appointments={appointments} messages={messages} />}
         {view === 'applications' && <Applications appointments={appointments} token={token} refresh={refresh} />}
         {view === 'calendar' && <CalendarView appointments={appointments} token={token} refresh={refresh} />}
