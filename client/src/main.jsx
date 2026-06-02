@@ -1017,28 +1017,42 @@ function Overview({ dashboard, appointments, messages }) {
 function Applications({ appointments, token, refresh }) {
   const [actionError, setActionError] = useState('');
   const [actionStatus, setActionStatus] = useState('');
+  const [visibleAppointments, setVisibleAppointments] = useState(appointments);
+  const [busyId, setBusyId] = useState('');
+
+  useEffect(() => {
+    setVisibleAppointments(appointments);
+  }, [appointments]);
 
   async function updateStatus(id, status) {
     setActionError('');
     setActionStatus('');
+    setBusyId(id);
     try {
-      await api(`/appointments/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }, token);
+      const updated = await api(`/appointments/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }, token);
+      setVisibleAppointments((current) => current.map((item) => (item.id === id ? updated : item)));
       setActionStatus(status === 'approved' ? 'Başvuru onaylandı.' : 'Başvuru reddedildi.');
-      refresh();
+      await refresh();
     } catch (error) {
       setActionError(error.message);
+    } finally {
+      setBusyId('');
     }
   }
 
   async function deleteAppointment(id) {
     setActionError('');
     setActionStatus('');
+    setBusyId(id);
     try {
       await api(`/appointments/${id}`, { method: 'DELETE' }, token);
+      setVisibleAppointments((current) => current.filter((item) => item.id !== id));
       setActionStatus('Başvuru veritabanından silindi.');
-      refresh();
+      await refresh();
     } catch (error) {
       setActionError(error.message);
+    } finally {
+      setBusyId('');
     }
   }
 
@@ -1053,7 +1067,7 @@ function Applications({ appointments, token, refresh }) {
         <table>
           <thead><tr><th>Danışan</th><th>Hizmet</th><th>Tarih</th><th>İşlem</th></tr></thead>
           <tbody>
-            {appointments.map((item) => (
+            {visibleAppointments.map((item) => (
               <tr key={item.id}>
                 <td><strong>{item.name}</strong><span>{item.email}<br />{item.phone}</span></td>
                 <td>{item.service}</td>
@@ -1062,14 +1076,18 @@ function Applications({ appointments, token, refresh }) {
                   <em>{statusLabel(item.status)}</em>
                   {item.mailDelivery && <small>Mail: {item.mailDelivery.status === 'sent' ? 'Gönderildi' : 'SMTP tanımlı değil'}</small>}
                 </td>
-                <td>
-                  <button className="success-button" disabled={item.status === 'approved'} onClick={() => updateStatus(item.id, 'approved')}>Onayla</button>
-                  <button className="danger-button" disabled={item.status === 'rejected'} onClick={() => updateStatus(item.id, 'rejected')}>Reddet</button>
-                  <button className="danger-button" onClick={() => deleteAppointment(item.id)}><Trash2 /> Sil</button>
+                <td className="table-actions">
+                  <button className="success-button" disabled={busyId === item.id || item.status === 'approved'} onClick={() => updateStatus(item.id, 'approved')}>
+                    {item.status === 'approved' ? 'Onaylandı' : busyId === item.id ? 'İşleniyor...' : 'Onayla'}
+                  </button>
+                  <button className="danger-button" disabled={busyId === item.id || item.status === 'rejected'} onClick={() => updateStatus(item.id, 'rejected')}>
+                    {item.status === 'rejected' ? 'Reddedildi' : 'Reddet'}
+                  </button>
+                  <button className="danger-button" disabled={busyId === item.id} onClick={() => deleteAppointment(item.id)}><Trash2 /> Sil</button>
                 </td>
               </tr>
             ))}
-            {!appointments.length && <tr><td colSpan="4">Henüz başvuru yok. Public randevu formundan başvuru gelince burada görünecek.</td></tr>}
+            {!visibleAppointments.length && <tr><td colSpan="4">Henüz başvuru yok. Public randevu formundan başvuru gelince burada görünecek.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -1182,8 +1182,28 @@ textarea { min-height: 130px; resize: vertical; }
 .stacked-row .approved { background: #3c83f6; }
 .stacked-row .completed { background: #22c58b; }
 .stacked-row .messages { background: #d946ef; }
-.success-button { background: #123d34; color: #22c58b; padding: 0 16px; }
-.danger-button { background: #4c1d25; color: #ff6b6b; padding: 0 14px; margin-left: 8px; }
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 240px;
+}
+.success-button,
+.danger-button {
+  min-width: 92px;
+  border: 1px solid transparent;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+  transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+.success-button { background: #123d34; color: #22c58b; padding: 0 16px; border-color: rgba(34, 197, 139, 0.32); }
+.danger-button { background: #4c1d25; color: #ff6b6b; padding: 0 14px; border-color: rgba(255, 107, 107, 0.28); }
+.table-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.table-actions button:disabled {
+  opacity: 0.52;
+  box-shadow: none;
+}
 .calendar-row { display: grid; grid-template-columns: 160px 1fr 100px; gap: 16px; padding: 16px 0; border-bottom: 1px solid #252c38; }
 .calendar-row em { color: #22c58b; font-style: normal; }
 .month-strip {
