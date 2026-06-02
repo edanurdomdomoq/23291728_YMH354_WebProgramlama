@@ -1,7 +1,7 @@
 import express from 'express';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
-import { readDb, writeDb } from '../services/database.js';
+import { readAppointments, readDb, writeDb } from '../services/database.js';
 import { sendMail } from '../services/emailService.js';
 
 const router = express.Router();
@@ -111,8 +111,7 @@ router.get('/slots', async (req, res) => {
   if (!date) return res.status(400).json({ message: 'Tarih zorunludur.' });
   if (isPastDate(date)) return res.json({ date, slots: workingHours.map((time) => ({ time, available: false, appointment: null })) });
 
-  const db = await readDb();
-  const appointments = (db.appointments || []).filter((item) => item.preferredDate === date && ['pending', 'approved', 'completed'].includes(item.status));
+  const appointments = (await readAppointments()).filter((item) => item.preferredDate === date && ['pending', 'approved', 'completed'].includes(item.status));
   const slots = workingHours.map((time) => {
     const appointment = appointments.find((item) => item.preferredTime === time);
     return {
@@ -130,8 +129,7 @@ router.get('/slots', async (req, res) => {
 });
 
 router.get('/', requireAuth, async (req, res) => {
-  const db = await readDb();
-  const visibleAppointments = (db.appointments || []).filter((item) => item.status !== 'rejected');
+  const visibleAppointments = (await readAppointments()).filter((item) => item.status !== 'rejected');
   res.json(visibleAppointments.slice().reverse());
 });
 

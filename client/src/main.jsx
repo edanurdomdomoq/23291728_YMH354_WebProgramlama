@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -520,8 +520,11 @@ function AppointmentForm({ services }) {
   const today = localDateKey();
   const [form, setForm] = useState({ name: '', email: '', phone: '', service: 'Online Terapi', preferredDate: today, preferredTime: '', message: '' });
   const [slots, setSlots] = useState([]);
+  const [slotLoading, setSlotLoading] = useState(false);
+  const [slotError, setSlotError] = useState('');
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const slotRequestRef = useRef(0);
 
   useEffect(() => {
     if (services[0]?.title && form.service === 'Online Terapi') {
@@ -530,16 +533,29 @@ function AppointmentForm({ services }) {
   }, [services]);
 
   async function loadPublicSlots(date) {
+    const requestId = slotRequestRef.current + 1;
+    slotRequestRef.current = requestId;
+    setSlotError('');
     if (!date || date < today) {
       setSlots([]);
       return;
     }
-    const data = await api(`/appointments/slots?date=${date}`);
-    setSlots(data.slots || []);
+    setSlotLoading(true);
+    try {
+      const data = await api(`/appointments/slots?date=${encodeURIComponent(date)}`);
+      if (slotRequestRef.current !== requestId) return;
+      setSlots(data.slots || []);
+    } catch {
+      if (slotRequestRef.current !== requestId) return;
+      setSlots([]);
+      setSlotError('Saatler alınamadı. Lütfen tarihi tekrar seçin veya birkaç saniye sonra deneyin.');
+    } finally {
+      if (slotRequestRef.current === requestId) setSlotLoading(false);
+    }
   }
 
   useEffect(() => {
-    loadPublicSlots(form.preferredDate).catch(() => setSlots([]));
+    loadPublicSlots(form.preferredDate);
   }, [form.preferredDate]);
 
   async function submit(event) {
@@ -587,7 +603,8 @@ function AppointmentForm({ services }) {
         </select>
         <input type="date" min={today} value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value, preferredTime: '' })} />
         <div className="public-slot-picker">
-          {slots.map((slot) => (
+          {slotLoading && <p>Uygun saatler yükleniyor...</p>}
+          {!slotLoading && slots.map((slot) => (
             <button
               type="button"
               key={slot.time}
@@ -599,7 +616,8 @@ function AppointmentForm({ services }) {
               <span>{slot.available ? 'Müsait' : 'Dolu'}</span>
             </button>
           ))}
-          {!slots.length && <p>Bu tarih için uygun saat bulunamadı.</p>}
+          {!slotLoading && slotError && <p>{slotError}</p>}
+          {!slotLoading && !slotError && !slots.length && <p>Bu tarih için uygun saat bulunamadı.</p>}
         </div>
         <textarea placeholder="Kısaca görüşme sebebiniz" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
         {error && <p className="form-error">{error}</p>}
@@ -637,7 +655,7 @@ function GuestPortal({ guestAuth }) {
   useEffect(() => {
     loadMessages();
     if (!token) return undefined;
-    const timer = window.setInterval(() => loadMessages(token), 6000);
+    const timer = window.setInterval(() => loadMessages(token), 15000);
     return () => window.clearInterval(timer);
   }, [token]);
 
@@ -878,7 +896,7 @@ function AdminShell({ auth }) {
 
   useEffect(() => {
     refresh();
-    const timer = window.setInterval(refresh, 10000);
+    const timer = window.setInterval(refresh, 20000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -1131,6 +1149,8 @@ function CalendarView({ appointments, token, refresh }) {
   const [selectedSlot, setSelectedSlot] = useState('');
   const [form, setForm] = useState({ name: '', service: 'Online Terapi', message: '' });
   const [calendarError, setCalendarError] = useState('');
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const calendarRequestRef = useRef(0);
   const approved = appointments.filter((item) => item.status === 'approved');
   const daysInSelectedMonth = new Date(currentYear, selectedMonth + 1, 0).getDate();
   const sessionCountsByDate = appointments.reduce((acc, item) => {
@@ -1152,11 +1172,25 @@ function CalendarView({ appointments, token, refresh }) {
   }
 
   async function loadSlots(date) {
+    const requestId = calendarRequestRef.current + 1;
+    calendarRequestRef.current = requestId;
     if (date < today) return;
     setSelectedDate(date);
-    const data = await api(`/appointments/slots?date=${date}`, {}, token);
-    setSlots(data.slots);
-    setSelectedSlot('');
+    setCalendarError('');
+    setCalendarLoading(true);
+    try {
+      const data = await api(`/appointments/slots?date=${encodeURIComponent(date)}`, {}, token);
+      if (calendarRequestRef.current !== requestId) return;
+      setSlots(data.slots || []);
+      setSelectedSlot('');
+    } catch (err) {
+      if (calendarRequestRef.current !== requestId) return;
+      setSlots([]);
+      setSelectedSlot('');
+      setCalendarError(`Saatler alınamadı: ${err.message}`);
+    } finally {
+      if (calendarRequestRef.current === requestId) setCalendarLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -1220,7 +1254,8 @@ function CalendarView({ appointments, token, refresh }) {
           <h2>{selectedDate}</h2>
           <p>Doluluk ve boş saatler</p>
           <div className="slot-grid">
-            {slots.map((slot) => (
+            {calendarLoading && <p>Saatler yükleniyor...</p>}
+            {!calendarLoading && slots.map((slot) => (
               <button
                 key={slot.time}
                 disabled={!slot.available}
@@ -1231,6 +1266,7 @@ function CalendarView({ appointments, token, refresh }) {
                 <span>{slot.available ? 'Boş' : `Dolu - ${slot.appointment.codeName}`}</span>
               </button>
             ))}
+            {!calendarLoading && !slots.length && <p>Bu gün için saat bilgisi alınamadı.</p>}
           </div>
           <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}>
             <option>Online Terapi</option>

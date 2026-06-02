@@ -252,6 +252,23 @@ function rowData(row) {
   return row.data || {};
 }
 
+function mapAppointmentRow(row) {
+  return {
+    ...rowData(row),
+    id: row.id,
+    codeName: row.code_name,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    service: row.service,
+    message: row.message || '',
+    preferredDate: normalizeDate(row.preferred_date),
+    preferredTime: row.preferred_time,
+    status: row.status,
+    createdAt: normalizeDateTime(row.created_at)
+  };
+}
+
 async function readPostgresDb() {
   const db = {};
   const client = getPool();
@@ -266,20 +283,7 @@ async function readPostgresDb() {
     createdAt: normalizeDateTime(row.created_at)
   }));
 
-  db.appointments = (await client.query('SELECT * FROM basvurular ORDER BY created_at')).rows.map((row) => ({
-    ...rowData(row),
-    id: row.id,
-    codeName: row.code_name,
-    name: row.name,
-    email: row.email,
-    phone: row.phone,
-    service: row.service,
-    message: row.message || '',
-    preferredDate: normalizeDate(row.preferred_date),
-    preferredTime: row.preferred_time,
-    status: row.status,
-    createdAt: normalizeDateTime(row.created_at)
-  }));
+  db.appointments = (await client.query('SELECT * FROM basvurular ORDER BY created_at')).rows.map(mapAppointmentRow);
 
   db.sessions = (await client.query('SELECT * FROM seanslar ORDER BY created_at')).rows.map((row) => ({
     ...rowData(row),
@@ -424,6 +428,14 @@ export async function readDb() {
   if (usesPostgres()) return readPostgresDb();
   const raw = await fs.readFile(dbPath, 'utf-8');
   return JSON.parse(raw);
+}
+
+export async function readAppointments() {
+  await ensureDatabase();
+  if (usesPostgres()) {
+    return (await getPool().query('SELECT * FROM basvurular ORDER BY created_at')).rows.map(mapAppointmentRow);
+  }
+  return (await readDb()).appointments || [];
 }
 
 export async function writeDb(data) {
