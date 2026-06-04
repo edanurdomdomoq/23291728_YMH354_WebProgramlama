@@ -1138,7 +1138,15 @@ textarea { min-height: 130px; resize: vertical; }
   color: #fff;
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
-.floating-call { bottom: 98px; background: #2f4054; }
+.floating-call {
+  bottom: 98px;
+  background: linear-gradient(135deg, #f2c64f, #efbd57);
+  box-shadow: 0 18px 36px rgba(229, 174, 58, 0.34);
+}
+.floating-call:hover,
+.floating-call:focus-visible {
+  transform: translateY(-2px);
+}
 .floating-whatsapp { bottom: 28px; background: #20c565; }
 
 .modal-backdrop {
