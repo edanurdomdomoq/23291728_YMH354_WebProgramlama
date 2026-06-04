@@ -56,6 +56,10 @@ function safePlanShape(parsed, fallback, provider) {
   };
 }
 
+function requestTimeout(ms = 8000) {
+  return AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;
+}
+
 async function generateWithGemini(input, fallback) {
   if (!process.env.GEMINI_API_KEY) return null;
 
@@ -74,6 +78,7 @@ async function generateWithGemini(input, fallback) {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: requestTimeout(),
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
   });
 
@@ -98,6 +103,7 @@ async function generateWithHuggingFace(input, fallback) {
       Authorization: `Bearer ${process.env.HF_API_TOKEN}`,
       'Content-Type': 'application/json'
     },
+    signal: requestTimeout(),
     body: JSON.stringify({ inputs: prompt })
   });
 

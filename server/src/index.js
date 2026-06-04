@@ -16,6 +16,22 @@ import { ensureDatabase } from './services/database.js';
 const app = express();
 const port = process.env.PORT || 5000;
 
+function protectAsyncRoutes(router) {
+  router.stack?.forEach((layer) => {
+    if (layer.route?.stack) {
+      layer.route.stack.forEach((routeLayer) => {
+        const handler = routeLayer.handle;
+        if (handler.length < 4) {
+          routeLayer.handle = (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+        }
+      });
+    } else if (layer.handle?.stack) {
+      protectAsyncRoutes(layer.handle);
+    }
+  });
+  return router;
+}
+
 // JSON veritabanı dosyası yoksa uygulama başlamadan önce oluşturulur.
 await ensureDatabase();
 
@@ -27,16 +43,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Klinik API' });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/content', contentRoutes);
+app.use('/api/auth', protectAsyncRoutes(authRoutes));
+app.use('/api/tasks', protectAsyncRoutes(taskRoutes));
+app.use('/api/dashboard', protectAsyncRoutes(dashboardRoutes));
+app.use('/api/ai', protectAsyncRoutes(aiRoutes));
+app.use('/api/public', protectAsyncRoutes(publicRoutes));
+app.use('/api/appointments', protectAsyncRoutes(appointmentRoutes));
+app.use('/api/sessions', protectAsyncRoutes(sessionRoutes));
+app.use('/api/reviews', protectAsyncRoutes(reviewRoutes));
+app.use('/api/messages', protectAsyncRoutes(messageRoutes));
+app.use('/api/content', protectAsyncRoutes(contentRoutes));
 
 // Merkezi hata yakalama katmanı.
 // Route içinde next(err) kullanılırsa cevap formatı burada standartlaşır.

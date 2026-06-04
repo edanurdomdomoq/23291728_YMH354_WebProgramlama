@@ -31,6 +31,10 @@ function parseGeminiJson(text) {
   return JSON.parse(String(text || '').replace(/```json|```/g, '').trim());
 }
 
+function requestTimeout(ms = 8000) {
+  return AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;
+}
+
 export async function analyzeReview(text) {
   const cleanedText = tidyReview(text);
 
@@ -50,6 +54,7 @@ export async function analyzeReview(text) {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: requestTimeout(),
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
 

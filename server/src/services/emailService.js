@@ -15,6 +15,14 @@ async function readLog() {
   }
 }
 
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} zaman aşımına uğradı.`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 export async function sendMail({ to, subject, message, type }) {
   const smtpReady = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
   const entry = {
@@ -34,18 +42,21 @@ export async function sendMail({ to, subject, message, type }) {
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT || 587),
         secure: process.env.SMTP_SECURE === 'true',
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
         }
       });
 
-      await transporter.sendMail({
+      await withTimeout(transporter.sendMail({
         from: process.env.MAIL_FROM || process.env.SMTP_USER,
         to,
         subject,
         text: message
-      });
+      }), 6000, 'Mail gönderimi');
 
       entry.status = 'sent';
     } catch (error) {
