@@ -785,16 +785,26 @@ function ReviewPage() {
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function submit(event) {
     event.preventDefault();
     setError('');
+    setResult(null);
     if (text.trim().length < 10) {
       setError('Lütfen deneyiminizi biraz daha detaylı yazın.');
       return;
     }
-    const data = await api('/reviews', { method: 'POST', body: JSON.stringify({ appointmentId, text }) });
-    setResult(data);
+    setLoading(true);
+    try {
+      await api('/reviews', { method: 'POST', body: JSON.stringify({ appointmentId, text }) });
+      setText('');
+      setResult({ ok: true });
+    } catch (err) {
+      setError(`Yorum gönderilemedi: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -803,23 +813,22 @@ function ReviewPage() {
       <section className="review-card">
         <span className="eyebrow">Geri Bildirim</span>
         <h1>Deneyiminizi paylaşın.</h1>
-        <p>Yorumunuz AI tarafından tarafsızca analiz edilir ve yıldız puanı otomatik belirlenir.</p>
+        <p>Yorumunuz sisteme kaydedilir ve klinik tarafında AI ile değerlendirilir.</p>
         <form onSubmit={submit}>
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Seans deneyiminizi yazın..." />
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-button">Yorumu Gönder</button>
+          <button className="primary-button" disabled={loading}>{loading ? 'Gönderiliyor...' : 'Yorumu Gönder'}</button>
         </form>
         {result && (
-          <div className="ai-review-result">
-            <strong>AI yıldız puanı: {result.ai.stars}/5</strong>
-            <p>{result.ai.summary}</p>
+          <div className="review-thank-you">
+            <strong>Teşekkür ederiz.</strong>
+            <p>Yorumunuz alındı. Değerlendirmeniz sisteme kaydedildi.</p>
           </div>
         )}
       </section>
     </main>
   );
 }
-
 function AuthPanel({ auth, onClose }) {
   const [form, setForm] = useState({ email: 'admin@mindcare.test', password: '123456' });
   const [error, setError] = useState('');

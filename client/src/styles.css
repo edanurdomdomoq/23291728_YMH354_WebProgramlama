@@ -1534,7 +1534,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   margin: 12px 0;
 }
 .review-card form { display: grid; gap: 14px; margin-top: 24px; }
-.ai-review-result {
+.review-thank-you {
   margin-top: 24px;
   border-left: 4px solid #7db1a6;
   border-radius: 10px;
