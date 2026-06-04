@@ -4,7 +4,6 @@ import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import taskRoutes from './routes/tasks.js';
 import dashboardRoutes from './routes/dashboard.js';
-import aiRoutes from './routes/ai.js';
 import publicRoutes from './routes/public.js';
 import appointmentRoutes from './routes/appointments.js';
 import sessionRoutes from './routes/sessions.js';
@@ -46,7 +45,6 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', protectAsyncRoutes(authRoutes));
 app.use('/api/tasks', protectAsyncRoutes(taskRoutes));
 app.use('/api/dashboard', protectAsyncRoutes(dashboardRoutes));
-app.use('/api/ai', protectAsyncRoutes(aiRoutes));
 app.use('/api/public', protectAsyncRoutes(publicRoutes));
 app.use('/api/appointments', protectAsyncRoutes(appointmentRoutes));
 app.use('/api/sessions', protectAsyncRoutes(sessionRoutes));

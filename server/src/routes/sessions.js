@@ -2,7 +2,6 @@ import express from 'express';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { readDb, writeDb } from '../services/database.js';
-import { generateStudyPlan } from '../services/aiService.js';
 
 const router = express.Router();
 
@@ -25,22 +24,8 @@ router.post('/summary/:appointmentId', async (req, res) => {
   const appointment = db.appointments.find((item) => item.id === req.params.appointmentId);
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-  const history = (db.sessions || [])
-    .filter((item) => item.appointmentId === appointment.id)
-    .map((item, index) => `Hafta ${index + 1}: ${item.anonymousNotes}`)
-    .join('\n');
-
-  const prompt = [
-    'Danışan bilgilerini anonim tutarak KVKK uyumlu seans özeti hazırla. Kişi adı, telefon ve e-posta kullanma.',
-    `Konu: ${appointment.service}`,
-    `Başvuru notu: ${appointment.message}`,
-    `Geçmiş anonim notlar: ${history || 'Geçmiş not yok.'}`
-  ].join('\n');
-
-  const plan = await generateStudyPlan({ goal: prompt, level: 'intermediate', weeklyHours: 2 });
-  res.json({ appointmentId: appointment.id, codeName: appointment.codeName, summary: plan });
+  res.status(410).json({ message: 'Yapay zeka analizi bu sürümde pasif.' });
 });
-
 router.post('/:appointmentId', async (req, res) => {
   const db = await readDb();
   const appointment = db.appointments.find((item) => item.id === req.params.appointmentId);

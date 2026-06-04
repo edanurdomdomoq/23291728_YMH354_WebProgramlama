@@ -141,7 +141,6 @@ function PublicHeader({ onAdmin }) {
     ['Anasayfa', '#anasayfa'],
     ['Hakkımda', '#hakkimda'],
     ['Blog', '#blog'],
-    ['Misafir', '#misafir'],
     ['Randevu Al', '#randevu']
   ];
 
@@ -175,21 +174,21 @@ function Hero({ onAppointment }) {
     <section id="anasayfa" className="hero-section">
       <div className="hero-copy">
         <span className="eyebrow">Online ve yüz yüze psikolojik danışmanlık</span>
-        <h1>İç sesinizi duyacak sakin, güvenli ve profesyonel bir alan.</h1>
-        
+        <h1>İç sesinizi duyacak sakin, güvenli ve profesyonel bir <em>alan.</em></h1>
         <div className="hero-actions">
-          <button className="primary-button" onClick={onAppointment}>Randevu Al</button>
-          <a className="text-link" href="#hakkimda" onClick={(event) => { event.preventDefault(); scrollToHash('#hakkimda'); }}>Yaklaşımı İncele <ArrowUpRight /></a>
+          <button className="primary-button gold-button" onClick={onAppointment}>Randevu Al <Calendar /></button>
+          <a className="text-link soft-link" href="#hakkimda" onClick={(event) => { event.preventDefault(); scrollToHash('#hakkimda'); }}>Yaklaşımı İncele <ArrowUpRight /></a>
         </div>
         <div className="trust-row">
           <span><ShieldCheck /> KVKK odaklı akış</span>
           <span><Video /> Online seans</span>
-          <span><Sparkles /> Yüz yüze seans</span>
+          <span><Users /> Yüz yüze seans</span>
         </div>
       </div>
       <div className="hero-card">
         <img src="/social-media/instagram/ana-gorsel.png" alt="Psikolog danışan görüşmesi" />
         <div className="floating-metric">
+          <Clock />
           <strong>24s</strong>
           <span>Başvuru geri dönüş hedefi</span>
         </div>
@@ -197,7 +196,6 @@ function Hero({ onAppointment }) {
     </section>
   );
 }
-
 function Services({ services }) {
   const sliderServices = services.length > 1 ? [...services, ...services] : services;
 
@@ -628,134 +626,6 @@ function AppointmentForm({ services }) {
   );
 }
 
-function GuestPortal({ guestAuth }) {
-  const [loginForm, setLoginForm] = useState({ name: '', email: '' });
-  const [messageForm, setMessageForm] = useState({ subject: '', body: '' });
-  const [messages, setMessages] = useState([]);
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  const token = guestAuth.session?.token;
-
-  async function loadMessages(nextToken = token) {
-    if (!nextToken) return;
-    try {
-      const data = await api('/messages', {}, nextToken);
-      setMessages(data);
-    } catch (err) {
-      if (err.status === 401 || err.code === 'TOKEN_EXPIRED') {
-        guestAuth.logout();
-        setMessages([]);
-        setError('Misafir oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
-        return;
-      }
-      setError(err.message);
-    }
-  }
-
-  useEffect(() => {
-    loadMessages();
-    if (!token) return undefined;
-    const timer = window.setInterval(() => loadMessages(token), 15000);
-    return () => window.clearInterval(timer);
-  }, [token]);
-
-  async function login(event) {
-    event.preventDefault();
-    setError('');
-    setStatus('');
-    try {
-      const data = await api('/auth/guest', { method: 'POST', body: JSON.stringify(loginForm) });
-      guestAuth.save(data);
-      await loadMessages(data.token);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function sendMessage(event) {
-    event.preventDefault();
-    setError('');
-    setStatus('');
-    try {
-      await api('/messages', { method: 'POST', body: JSON.stringify(messageForm) }, token);
-      setMessageForm({ subject: '', body: '' });
-      setStatus('Mesajınız klinik paneline düştü. Doktor panelinde anlık olarak görünür.');
-      await loadMessages();
-    } catch (err) {
-      if (err.status === 401 || err.code === 'TOKEN_EXPIRED') {
-        guestAuth.logout();
-        setMessages([]);
-        setError('Misafir oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
-        return;
-      }
-      setError(err.message);
-    }
-  }
-
-  return (
-    <section id="misafir" className="guest-section">
-      <div className="section-title">
-        <span className="eyebrow">Misafir Alanı</span>
-        <h2>Giriş yapan danışan için güvenli mesaj kutusu.</h2>
-        <p>Misafir hesabı ile mesaj bırakabilir, doktor paneline düşen iletilerinizi takip edebilirsiniz.</p>
-      </div>
-      <div className="guest-grid">
-        <article className="guest-card">
-          <UserRound />
-          <h3>{guestAuth.session ? `Hoş geldiniz, ${guestAuth.session.user.name}` : 'Misafir Girişi'}</h3>
-          {!guestAuth.session ? (
-            <form onSubmit={login}>
-              <input placeholder="Ad Soyad" value={loginForm.name} onChange={(e) => setLoginForm({ ...loginForm, name: e.target.value })} />
-              <input placeholder="E-posta" type="email" value={loginForm.email} onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })} />
-              {error && <p className="form-error">{error}</p>}
-              <button className="primary-button">Misafir Olarak Gir</button>
-            </form>
-          ) : (
-            <div className="guest-session">
-              <p>{guestAuth.session.user.email}</p>
-              <button className="outline-pill" onClick={guestAuth.logout}>Misafir Çıkış</button>
-            </div>
-          )}
-        </article>
-        <article className="guest-card message-card">
-          <MessageCircle />
-          <h3>Kliniğe Mesaj Gönder</h3>
-          <form onSubmit={sendMessage}>
-            <input disabled={!guestAuth.session} placeholder="Konu" value={messageForm.subject} onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })} />
-            <textarea disabled={!guestAuth.session} placeholder="Mesajınızı yazın..." value={messageForm.body} onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })} />
-            {status && <p className="form-success">{status}</p>}
-            {error && <p className="form-error">{error}</p>}
-            <button className="primary-button" disabled={!guestAuth.session}><Send /> Mesajı Gönder</button>
-          </form>
-        </article>
-        <article className="guest-card">
-          <Mail />
-          <h3>Mesaj Geçmişi</h3>
-          <div className="guest-message-list">
-            {messages.map((message) => (
-              <div key={message.id}>
-                <strong>{message.subject}</strong>
-                <span className={`guest-message-status ${message.status}`}>
-                  <CheckCircle2 />
-                  {message.status === 'replied' ? 'Klinik cevapladı' : message.status === 'read' ? 'Doktor okudu' : 'Klinik panelinde'}
-                </span>
-                <p>{message.body}</p>
-                {message.reply && (
-                  <section className="guest-reply">
-                    <strong>Klinik cevabı</strong>
-                    <p>{message.reply}</p>
-                  </section>
-                )}
-              </div>
-            ))}
-            {!messages.length && <p>Giriş yaptıktan sonra gönderdiğiniz mesajlar burada listelenir.</p>}
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
 function Footer() {
   return (
     <footer className="site-footer">
@@ -813,7 +683,7 @@ function ReviewPage() {
       <section className="review-card">
         <span className="eyebrow">Geri Bildirim</span>
         <h1>Deneyiminizi paylaşın.</h1>
-        <p>Yorumunuz sisteme kaydedilir ve klinik tarafında AI ile değerlendirilir.</p>
+        <p>Yorumunuz sisteme kaydedilir ve klinik tarafından değerlendirilir.</p>
         <form onSubmit={submit}>
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Seans deneyiminizi yazın..." />
           {error && <p className="form-error">{error}</p>}
@@ -865,11 +735,9 @@ function AdminShell({ auth }) {
   const [view, setView] = useState('overview');
   const [dashboard, setDashboard] = useState(null);
   const [appointments, setAppointments] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [posts, setPosts] = useState([]);
   const [adminServices, setAdminServices] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [aiResult, setAiResult] = useState(null);
   const [refreshError, setRefreshError] = useState('');
   const token = auth.session.token;
 
@@ -877,7 +745,6 @@ function AdminShell({ auth }) {
     const requests = [
       ['dashboard', api('/dashboard', {}, token)],
       ['appointments', api('/appointments', {}, token)],
-      ['messages', api('/messages', {}, token)],
       ['posts', api('/content/posts', {}, token)],
       ['services', api('/content/services', {}, token)],
       ['reviews', api('/content/reviews', {}, token)]
@@ -886,7 +753,6 @@ function AdminShell({ auth }) {
     const setters = {
       dashboard: setDashboard,
       appointments: setAppointments,
-      messages: setMessages,
       posts: setPosts,
       services: setAdminServices,
       reviews: setReviews
@@ -914,7 +780,6 @@ function AdminShell({ auth }) {
     ['applications', 'Yeni Başvurular', Users],
     ['calendar', 'Seans Takvimi', Calendar],
     ['session', 'Seans Odası', Video],
-    ['messages', 'Mesaj Merkezi', MessageCircle],
     ['blog', 'Blog Yönetimi', FileText],
     ['services', 'Hizmetler', HeartHandshake],
   ];
@@ -932,11 +797,10 @@ function AdminShell({ auth }) {
       </aside>
       <section className="admin-content">
         {refreshError && <p className="form-error">{refreshError}</p>}
-        {view === 'overview' && <Overview dashboard={dashboard} appointments={appointments} messages={messages} />}
+        {view === 'overview' && <Overview dashboard={dashboard} appointments={appointments} />}
         {view === 'applications' && <Applications appointments={appointments} token={token} refresh={refresh} />}
         {view === 'calendar' && <CalendarView appointments={appointments} token={token} refresh={refresh} />}
-        {view === 'session' && <SessionRoom token={token} appointments={appointments} refresh={refresh} aiResult={aiResult} setAiResult={setAiResult} />}
-        {view === 'messages' && <MessageCenter messages={messages} token={token} refresh={refresh} />}
+        {view === 'session' && <SessionRoom token={token} appointments={appointments} refresh={refresh} />}
         {view === 'blog' && <BlogManager posts={posts} token={token} refresh={refresh} />}
         {view === 'services' && <ServicesManager services={adminServices} token={token} refresh={refresh} />}
       </section>
@@ -944,7 +808,7 @@ function AdminShell({ auth }) {
   );
 }
 
-function Overview({ dashboard, appointments, messages }) {
+function Overview({ dashboard, appointments }) {
   if (!dashboard) return <div className="admin-card">Yükleniyor...</div>;
   const total = dashboard.summary.appointmentCount || 0;
   const pending = dashboard.summary.pendingAppointments || 0;
@@ -953,7 +817,7 @@ function Overview({ dashboard, appointments, messages }) {
   const maxDaily = Math.max(1, ...dashboard.appointmentsByDate.map((item) => item.total), 1);
   const maxStatus = Math.max(1, ...dashboard.statusDistribution.map((item) => item.count), 1);
   const summary = dashboard.summary;
-  const maxMonthly = Math.max(1, ...dashboard.monthlyMatrix.flatMap((item) => [item.pending, item.approved, item.completed, item.messages]), 1);
+  const maxMonthly = Math.max(1, ...dashboard.monthlyMatrix.flatMap((item) => [item.pending, item.approved, item.completed]), 1);
 
   return (
     <>
@@ -969,9 +833,6 @@ function Overview({ dashboard, appointments, messages }) {
         <article><span>Toplam Danışan</span><strong>{total}</strong></article>
         <article><span>Bugünkü Seanslar</span><strong>{todaySessions}</strong></article>
         <article className="highlight"><span>Bekleyen Başvuru</span><strong>{pending}</strong></article>
-        <article><span>Misafir Kullanıcı</span><strong>{summary.guestCount}</strong></article>
-        <article className="highlight"><span>Okunmamış Mesaj</span><strong>{summary.unreadMessages}</strong></article>
-        <article><span>AI Yorum Puanı</span><strong>{summary.averageRating}/5</strong></article>
       </div>
       <div className="admin-grid">
         <div className="admin-card wide">
@@ -1029,9 +890,8 @@ function Overview({ dashboard, appointments, messages }) {
                   <i className="pending" style={{ width: `${(item.pending / maxMonthly) * 100}%` }} />
                   <i className="approved" style={{ width: `${(item.approved / maxMonthly) * 100}%` }} />
                   <i className="completed" style={{ width: `${(item.completed / maxMonthly) * 100}%` }} />
-                  <i className="messages" style={{ width: `${(item.messages / maxMonthly) * 100}%` }} />
                 </div>
-                <b>{item.pending + item.approved + item.completed + item.messages}</b>
+                <b>{item.pending + item.approved + item.completed}</b>
               </div>
             ))}
             {!dashboard.monthlyMatrix.length && <p>Veri geldikçe aylık matris oluşur.</p>}
@@ -1045,9 +905,6 @@ function Overview({ dashboard, appointments, messages }) {
           <tbody>
             {appointments.slice(0, 5).map((item) => (
               <tr key={item.id}><td>{item.name}</td><td>{item.service}</td><td>{item.preferredDate || '-'}</td><td>{statusLabel(item.status)}</td></tr>
-            ))}
-            {messages.slice(0, 4).map((item) => (
-              <tr key={item.id}><td>{item.guestName}</td><td>{item.subject}</td><td>{item.createdAt.slice(0, 10)}</td><td>{item.status === 'read' ? 'Okundu' : 'Yeni mesaj'}</td></tr>
             ))}
           </tbody>
         </table>
@@ -1299,7 +1156,7 @@ function formatDuration(seconds) {
   return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
 }
 
-function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
+function SessionRoom({ token, appointments, refresh }) {
   const today = localDateKey();
   const todaysAppointments = appointments.filter((item) => item.status === 'approved' && item.preferredDate === today);
   const selectable = todaysAppointments;
@@ -1308,7 +1165,6 @@ function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
   const [elapsed, setElapsed] = useState(0);
   const [sessionRunning, setSessionRunning] = useState(false);
   const [sessionStatus, setSessionStatus] = useState('');
-  const [loading, setLoading] = useState(false);
   const selected = selectable.find((item) => item.id === selectedId) || selectable[0];
 
   useEffect(() => {
@@ -1324,25 +1180,13 @@ function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
       setNotes('');
     }
   }, [selected?.id]);
-
-  async function generate() {
-    if (!selected) return;
-    setLoading(true);
-    if (notes.trim()) {
-      await api(`/sessions/${selected.id}`, { method: 'POST', body: JSON.stringify({ anonymousNotes: notes }) }, token);
-    }
-    const data = await api(`/sessions/summary/${selected.id}`, { method: 'POST' }, token);
-    setAiResult(data.summary);
-    setLoading(false);
-  }
-
   async function saveNotes() {
     if (!selected || !notes.trim()) return;
     await api(`/sessions/${selected.id}`, {
       method: 'POST',
       body: JSON.stringify({ anonymousNotes: notes })
     }, token);
-    setSessionStatus('Seans notu kaydedildi. AI analizinde danışan kimliği gizlenir.');
+    setSessionStatus('Seans notu kaydedildi.');
     setNotes('');
   }
 
@@ -1360,7 +1204,7 @@ function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
       <div className="admin-title-row">
         <div>
           <h1>Seans Odası</h1>
-          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor danışanı açıkça görür, AI analizinde kimlik gizlenir.</p>
+          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini ve notlarını bu ekrandan yönetir.</p>
         </div>
         <div className={sessionRunning ? 'session-timer running' : 'session-timer'}>
           <Clock /> {formatDuration(elapsed)}
@@ -1389,9 +1233,6 @@ function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
               <p><strong>Başvuru Notu:</strong> {selected.message || 'Not yok'}</p>
             </div>
           ) : <p>Bugün veya yakında onaylanmış seans yok.</p>}
-          <div className="session-actions">
-            <button className="primary-button" disabled={!selected} onClick={generate}>{loading ? 'Hazırlanıyor...' : 'Yapay Zeka ile Analiz Et'}</button>
-          </div>
         </div>
         <div className="admin-card session-notes-card">
           <h2>Canlı Seans Notları</h2>
@@ -1405,81 +1246,11 @@ function SessionRoom({ token, appointments, refresh, aiResult, setAiResult }) {
             </button>
             <button className="outline-pill" disabled={!selected || elapsed === 0} onClick={() => setElapsed(0)}>Sıfırla</button>
           </div>
-          <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen not AI analizinde anonim kullanılır.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen notlar doktor panelinde saklanır.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <button className="success-button" disabled={!selected || !notes.trim()} onClick={saveNotes}>Notu Kaydet</button>
           <button className="primary-button complete-button" disabled={!selected} onClick={completeSession}>Terapiyi Tamamla ve Mail Gönder</button>
           {sessionStatus && <p className="form-success">{sessionStatus}</p>}
         </div>
-      </div>
-      {aiResult && (
-        <div className="admin-card">
-          <h2>{aiResult.title}</h2>
-          <p>{aiResult.overview}</p>
-          <ol>{aiResult.days.map((day) => <li key={day}>{day}</li>)}</ol>
-        </div>
-      )}
-    </>
-  );
-}
-
-function MessageCenter({ messages, token, refresh }) {
-  const [replies, setReplies] = useState({});
-
-  async function markRead(id) {
-    await api(`/messages/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'read' }) }, token);
-    refresh();
-  }
-
-  async function sendReply(id) {
-    const reply = replies[id] || '';
-    await api(`/messages/${id}`, { method: 'PATCH', body: JSON.stringify({ reply }) }, token);
-    setReplies({ ...replies, [id]: '' });
-    refresh();
-  }
-
-  return (
-    <>
-      <div className="admin-title-row">
-        <div>
-          <h1>Mesaj Merkezi</h1>
-          <p>Misafir girişi yapan kullanıcıların mesajları doğrudan bu klinik paneline düşer.</p>
-        </div>
-      </div>
-      <div className="message-board">
-        {messages.map((message) => (
-          <article className={['read', 'replied'].includes(message.status) ? 'admin-card message-item read' : 'admin-card message-item'} key={message.id}>
-            <div>
-              <span>{message.guestName} - {message.guestEmail}</span>
-              <small className={`message-state ${message.status}`}>
-                <CheckCircle2 /> {message.status === 'replied' ? 'Cevaplandı' : message.status === 'read' ? 'Okundu' : 'Yeni mesaj'}
-                {message.readAt ? ` - ${new Date(message.readAt).toLocaleString('tr-TR')}` : ''}
-              </small>
-              <h2>{message.subject}</h2>
-              <p>{message.body}</p>
-              {message.reply && (
-                <div className="doctor-reply">
-                  <strong>Gönderilen cevap</strong>
-                  <p>{message.reply}</p>
-                </div>
-              )}
-              <small>{new Date(message.createdAt).toLocaleString('tr-TR')}</small>
-            </div>
-            <div className="reply-actions">
-              <textarea
-                placeholder="Danışana cevap yaz..."
-                value={replies[message.id] || ''}
-                onChange={(event) => setReplies({ ...replies, [message.id]: event.target.value })}
-              />
-              <button className="primary-button small" disabled={!(replies[message.id] || '').trim()} onClick={() => sendReply(message.id)}>
-                <Send /> Cevapla
-              </button>
-              <button className="success-button" disabled={message.status === 'read' || message.status === 'replied'} onClick={() => markRead(message.id)}>
-                {message.status === 'read' || message.status === 'replied' ? 'Okundu' : 'Okundu Yap'}
-              </button>
-            </div>
-          </article>
-        ))}
-        {!messages.length && <div className="admin-card">Henüz misafir mesajı yok.</div>}
       </div>
     </>
   );
@@ -1761,7 +1532,6 @@ function ServicesManager({ services, token, refresh }) {
 
 function App() {
   const auth = useAuth();
-  const guestAuth = useGuestAuth();
   const [site, setSite] = useState({ services: [], posts: [], testimonials: [] });
   const path = window.location.pathname;
   const isDoctorRoute = path === '/doctor';
@@ -1787,7 +1557,6 @@ function App() {
       <SocialShowcase />
       <Testimonials testimonials={site.testimonials} />
       <AppointmentForm services={services} />
-      <GuestPortal guestAuth={guestAuth} />
       <Footer />
       <a className="floating-call" href="tel:+905421048874"><Phone /></a>
       <a className="floating-whatsapp" href="https://wa.me/905421048874"><MessageCircle /></a>
