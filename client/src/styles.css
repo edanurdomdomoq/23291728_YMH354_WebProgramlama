@@ -179,7 +179,6 @@ img { max-width: 100%; display: block; }
   inset: 0;
   pointer-events: none;
   background:
-    url("data:image/svg+xml,%3Csvg width='240' height='320' viewBox='0 0 240 320' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%238C9678' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' opacity='.32'%3E%3Cpath d='M86 286C78 216 81 151 126 82'/%3E%3Cpath d='M88 244C53 235 31 216 21 187C57 185 82 204 88 244Z'/%3E%3Cpath d='M96 196C57 177 42 147 51 112C90 130 105 160 96 196Z'/%3E%3Cpath d='M119 136C91 105 89 72 111 41C140 73 142 106 119 136Z'/%3E%3Cpath d='M116 223C153 211 177 187 188 152C150 155 124 180 116 223Z'/%3E%3Cpath d='M135 165C175 153 198 126 205 88C166 94 141 119 135 165Z'/%3E%3C/g%3E%3C/svg%3E") left 74% / clamp(150px, 15vw, 240px) auto no-repeat,
     radial-gradient(circle, rgba(239, 189, 87, 0.28) 1.5px, transparent 2px) 16px 104px / 20px 20px no-repeat,
     radial-gradient(circle, rgba(239, 189, 87, 0.22) 1.5px, transparent 2px) calc(100% - 128px) calc(100% - 180px) / 20px 20px no-repeat;
 }
