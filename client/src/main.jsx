@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -201,7 +201,7 @@ function Services({ services }) {
 
   return (
     <section className="services-section">
-      <p className="quote">"İçinizdeki sese kulak verin, iyileşme orada başlar."</p>
+      <p className="quote">"Değişim Bir Adımla Başlar."</p>
       <div className="service-slider" aria-label="Hizmetler">
         <div className="service-track">
         {sliderServices.map((service, index) => {
@@ -631,7 +631,7 @@ function Footer() {
     <footer className="site-footer">
       <div>
         <Brand compact />
-        <p>Güvenli, saygılı ve profesyonel psikolojik danışmanlık deneyimi.</p>
+        <p>Kendinizi daha iyi anlamanız ve yaşamın getirdiği zorluklarla daha sağlıklı başa çıkabilmeniz için profesyonel destek sunuyorum.</p>
       </div>
       <div>
         <h4>Sayfalar</h4>
@@ -1165,6 +1165,8 @@ function SessionRoom({ token, appointments, refresh }) {
   const [elapsed, setElapsed] = useState(0);
   const [sessionRunning, setSessionRunning] = useState(false);
   const [sessionStatus, setSessionStatus] = useState('');
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const selected = selectable.find((item) => item.id === selectedId) || selectable[0];
 
   useEffect(() => {
@@ -1174,29 +1176,59 @@ function SessionRoom({ token, appointments, refresh }) {
   }, [sessionRunning, selected?.id]);
 
   useEffect(() => {
+    setAiSummary(null);
+    setSessionStatus('');
     if (!selected) {
       setSessionRunning(false);
       setElapsed(0);
       setNotes('');
     }
   }, [selected?.id]);
-  async function saveNotes() {
+
+  async function saveNotes({ silent = false } = {}) {
     if (!selected || !notes.trim()) return;
     await api(`/sessions/${selected.id}`, {
       method: 'POST',
       body: JSON.stringify({ anonymousNotes: notes })
     }, token);
-    setSessionStatus('Seans notu kaydedildi.');
+    if (!silent) setSessionStatus('Seans notu kaydedildi.');
     setNotes('');
   }
 
-  async function completeSession() {
+  async function finishCurrentSession() {
     if (!selected) return;
-    if (notes.trim()) await saveNotes();
+    if (notes.trim()) await saveNotes({ silent: true });
+    setSessionRunning(false);
+    setSessionStatus('Seans bitirildi ve notlar kaydedildi. Terapi süreci açık bırakıldı.');
+  }
+
+  async function analyzeWithAi() {
+    if (!selected) return;
+    setAiLoading(true);
+    setSessionStatus('');
+    try {
+      const result = await api(`/sessions/summary/${selected.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ notes })
+      }, token);
+      setAiSummary(result.analysis);
+      setSessionStatus('Yapay zeka özeti hazırlandı. Danışan kimlik bilgisi AI isteğine gönderilmedi.');
+    } catch (error) {
+      setSessionStatus(error.message || 'Yapay zeka analizi oluşturulamadı.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function completeTherapy() {
+    if (!selected) return;
+    const confirmed = window.confirm('Bu işlem terapi sürecini tamamen tamamlandı yapar ve danışana yorum bağlantısı maili göndermeyi dener. Devam edilsin mi?');
+    if (!confirmed) return;
+    if (notes.trim()) await saveNotes({ silent: true });
     setSessionRunning(false);
     await api(`/appointments/${selected.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) }, token);
     await refresh();
-    setSessionStatus('Seans tamamlandı. SMTP bilgileri tanımlıysa danışana yorum linki içeren e-posta gönderildi.');
+    setSessionStatus('Terapi süreci tamamlandı. SMTP bilgileri tanımlıysa danışana yorum bağlantısı içeren e-posta gönderildi.');
   }
 
   return (
@@ -1204,7 +1236,7 @@ function SessionRoom({ token, appointments, refresh }) {
       <div className="admin-title-row">
         <div>
           <h1>Seans Odası</h1>
-          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini ve notlarını bu ekrandan yönetir.</p>
+          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini, notlarını ve AI destekli özeti bu ekrandan yönetir.</p>
         </div>
         <div className={sessionRunning ? 'session-timer running' : 'session-timer'}>
           <Clock /> {formatDuration(elapsed)}
@@ -1232,7 +1264,28 @@ function SessionRoom({ token, appointments, refresh }) {
               <p><strong>Hizmet:</strong> {selected.service}</p>
               <p><strong>Başvuru Notu:</strong> {selected.message || 'Not yok'}</p>
             </div>
-          ) : <p>Bugün veya yakında onaylanmış seans yok.</p>}
+          ) : <p>Bugün onaylanmış seans yok.</p>}
+          {aiSummary && (
+            <div className="ai-summary-panel">
+              <span>{aiSummary.provider}</span>
+              <h3>AI Destekli Klinik Özet</h3>
+              <p>{aiSummary.summary}</p>
+              <div className="ai-summary-grid">
+                <div>
+                  <strong>Takip Durumu</strong>
+                  <p>{aiSummary.riskLevel}</p>
+                </div>
+                <div>
+                  <strong>Gizlilik</strong>
+                  <p>{aiSummary.privacyNote}</p>
+                </div>
+              </div>
+              <strong>Odak Alanları</strong>
+              <ul>{(aiSummary.focusAreas || []).map((item) => <li key={item}>{item}</li>)}</ul>
+              <strong>Sonraki Seans İçin Öneriler</strong>
+              <ul>{(aiSummary.nextSessionSuggestions || []).map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+          )}
         </div>
         <div className="admin-card session-notes-card">
           <h2>Canlı Seans Notları</h2>
@@ -1245,17 +1298,24 @@ function SessionRoom({ token, appointments, refresh }) {
               <Play /> {sessionRunning ? 'Duraklat' : 'Seansı Başlat'}
             </button>
             <button className="outline-pill" disabled={!selected || elapsed === 0} onClick={() => setElapsed(0)}>Sıfırla</button>
+            <button className="outline-pill" disabled={!selected || elapsed === 0} onClick={finishCurrentSession}>Seansı Bitir</button>
           </div>
-          <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen notlar doktor panelinde saklanır.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <button className="success-button" disabled={!selected || !notes.trim()} onClick={saveNotes}>Notu Kaydet</button>
-          <button className="primary-button complete-button" disabled={!selected} onClick={completeSession}>Terapiyi Tamamla ve Mail Gönder</button>
+          <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen notlar doktor panelinde saklanır ve AI özeti için kullanılabilir.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="session-secondary-actions">
+            <button className="success-button" disabled={!selected || !notes.trim()} onClick={() => saveNotes()}>Notu Kaydet</button>
+            <button className="outline-pill" disabled={!selected || aiLoading} onClick={analyzeWithAi}>{aiLoading ? 'AI Analiz Ediyor...' : 'Yapay Zeka Özeti Al'}</button>
+          </div>
+          <details className="therapy-complete-panel">
+            <summary>Terapi sürecini sonlandırma</summary>
+            <p>Bu seçenek yalnızca danışanın terapi süreci tamamen bittiyse kullanılmalıdır. İşlem sonrası danışana yorum bağlantısı içeren mail gönderilmeye çalışılır.</p>
+            <button className="danger-button" disabled={!selected} onClick={completeTherapy}>Terapiyi Tamamen Sonlandır ve Mail Gönder</button>
+          </details>
           {sessionStatus && <p className="form-success">{sessionStatus}</p>}
         </div>
       </div>
     </>
   );
 }
-
 function MailLogPanel({ mailLog }) {
   return (
     <>
@@ -1565,3 +1625,5 @@ function App() {
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+
+

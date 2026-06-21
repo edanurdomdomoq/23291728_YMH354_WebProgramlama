@@ -1528,6 +1528,11 @@ textarea { min-height: 130px; resize: vertical; }
   flex-wrap: wrap;
   gap: 12px;
 }
+.session-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .session-break-card {
   border: 1px solid rgba(60, 131, 246, 0.4);
   border-radius: 20px;
@@ -1545,6 +1550,65 @@ textarea { min-height: 130px; resize: vertical; }
   background: #111721;
   padding: 16px;
   color: #cdd8e7;
+}
+.ai-summary-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(60, 131, 246, 0.34);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(60, 131, 246, 0.12), rgba(34, 197, 139, 0.08));
+  color: #dbe5f4;
+  padding: 18px;
+}
+.ai-summary-panel span {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(60, 131, 246, 0.16);
+  color: #8bb7ff;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+.ai-summary-panel h3 {
+  margin: 0;
+  color: #fff;
+}
+.ai-summary-panel p,
+.ai-summary-panel li {
+  color: #cdd8e7;
+  line-height: 1.55;
+}
+.ai-summary-panel ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.ai-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ai-summary-grid div {
+  border-radius: 14px;
+  background: rgba(13, 17, 23, 0.72);
+  padding: 12px;
+}
+.therapy-complete-panel {
+  border: 1px solid rgba(255, 107, 107, 0.24);
+  border-radius: 16px;
+  background: rgba(76, 29, 37, 0.16);
+  padding: 14px;
+}
+.therapy-complete-panel summary {
+  cursor: pointer;
+  color: #ffb4b4;
+  font-weight: 900;
+}
+.therapy-complete-panel p {
+  color: #cdd8e7;
+  line-height: 1.55;
+}
+.therapy-complete-panel .danger-button {
+  width: 100%;
 }
 .complete-button { margin-top: 14px; width: 100%; }
 .blog-admin-list div { display: grid; grid-template-columns: 72px 1fr auto auto auto; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid #252c38; }

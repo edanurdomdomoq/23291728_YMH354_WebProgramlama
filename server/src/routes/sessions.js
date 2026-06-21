@@ -2,6 +2,7 @@ import express from 'express';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { readDb, writeDb } from '../services/database.js';
+import { analyzeSessionNotes } from '../services/sessionAiService.js';
 
 const router = express.Router();
 
@@ -24,8 +25,26 @@ router.post('/summary/:appointmentId', async (req, res) => {
   const appointment = db.appointments.find((item) => item.id === req.params.appointmentId);
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
-  res.status(410).json({ message: 'Yapay zeka analizi bu sürümde pasif.' });
+  const savedNotes = (db.sessions || [])
+    .filter((item) => item.appointmentId === appointment.id)
+    .map((item) => item.anonymousNotes)
+    .filter(Boolean);
+  const liveNotes = String(req.body?.notes || '').trim();
+  const combinedNotes = [...savedNotes, liveNotes].filter(Boolean).join('\n---\n');
+
+  if (!combinedNotes.trim()) {
+    return res.status(400).json({ message: 'Analiz için önce seans notu girin veya kaydedin.' });
+  }
+
+  const analysis = await analyzeSessionNotes(combinedNotes);
+  res.json({
+    appointmentId: appointment.id,
+    patient: appointment.name,
+    privacy: 'AI isteğine danışanın kimlik bilgileri gönderilmez.',
+    analysis
+  });
 });
+
 router.post('/:appointmentId', async (req, res) => {
   const db = await readDb();
   const appointment = db.appointments.find((item) => item.id === req.params.appointmentId);
