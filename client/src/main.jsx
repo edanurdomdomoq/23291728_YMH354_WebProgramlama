@@ -41,6 +41,7 @@ const statusLabels = {
   approved: 'Onaylandı',
   rejected: 'Reddedildi',
   completed: 'Tamamlandı',
+  session_done: 'Seans Bitti',
   cancelled: 'İptal'
 };
 
@@ -914,14 +915,19 @@ function Overview({ dashboard, appointments }) {
 }
 
 function Applications({ appointments, token, refresh }) {
+  const [busyId, setBusyId] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionStatus, setActionStatus] = useState('');
   const [visibleAppointments, setVisibleAppointments] = useState(appointments);
-  const [busyId, setBusyId] = useState('');
+  const [aiSummaryById, setAiSummaryById] = useState({});
+  const [aiBusyId, setAiBusyId] = useState('');
 
   useEffect(() => {
     setVisibleAppointments(appointments);
   }, [appointments]);
+
+  const newApplications = visibleAppointments.filter((item) => item.status === 'pending');
+  const historyApplications = visibleAppointments.filter((item) => item.status !== 'pending');
 
   async function updateStatus(id, status) {
     setActionError('');
@@ -955,19 +961,28 @@ function Applications({ appointments, token, refresh }) {
     }
   }
 
-  return (
-    <>
-      <div className="admin-title-row">
-        <h1>Yeni Başvurular</h1>
-      </div>
-      {actionError && <p className="form-error">{actionError}</p>}
-      {actionStatus && <p className="form-success">{actionStatus}</p>}
-      <div className="admin-card">
-        <table>
-          <thead><tr><th>Danışan</th><th>Hizmet</th><th>Tarih</th><th>İşlem</th></tr></thead>
-          <tbody>
-            {visibleAppointments.map((item) => (
-              <tr key={item.id}>
+  async function readAiSummary(id) {
+    setActionError('');
+    setActionStatus('');
+    setAiBusyId(id);
+    try {
+      const result = await api(`/sessions/summary/${id}`, { method: 'POST', body: JSON.stringify({ notes: '' }) }, token);
+      setAiSummaryById((current) => ({ ...current, [id]: result.analysis }));
+    } catch (error) {
+      setActionError(error.message || 'Bu danışan için AI özeti oluşturulamadı.');
+    } finally {
+      setAiBusyId('');
+    }
+  }
+
+  function AppointmentRows({ items, mode }) {
+    return (
+      <tbody>
+        {items.map((item) => {
+          const aiSummary = aiSummaryById[item.id];
+          return (
+            <React.Fragment key={item.id}>
+              <tr>
                 <td><strong>{item.name}</strong><span>{item.email}<br />{item.phone}</span></td>
                 <td>{item.service}</td>
                 <td>
@@ -984,24 +999,68 @@ function Applications({ appointments, token, refresh }) {
                   )}
                 </td>
                 <td className="table-actions">
-                  <button className="success-button" disabled={busyId === item.id || item.status === 'approved'} onClick={() => updateStatus(item.id, 'approved')}>
-                    {item.status === 'approved' ? 'Onaylandı' : busyId === item.id ? 'İşleniyor...' : 'Onayla'}
-                  </button>
-                  <button className="danger-button" disabled={busyId === item.id || item.status === 'rejected'} onClick={() => updateStatus(item.id, 'rejected')}>
-                    {item.status === 'rejected' ? 'Reddedildi' : 'Reddet'}
-                  </button>
+                  {mode === 'new' ? (
+                    <>
+                      <button className="success-button" disabled={busyId === item.id} onClick={() => updateStatus(item.id, 'approved')}>
+                        {busyId === item.id ? 'İşleniyor...' : 'Onayla'}
+                      </button>
+                      <button className="danger-button" disabled={busyId === item.id} onClick={() => updateStatus(item.id, 'rejected')}>Reddet</button>
+                    </>
+                  ) : (
+                    <button className="outline-pill" disabled={aiBusyId === item.id} onClick={() => readAiSummary(item.id)}>
+                      {aiBusyId === item.id ? 'Okunuyor...' : 'Yapay Zeka Özetini Oku'}
+                    </button>
+                  )}
                   <button className="danger-button" disabled={busyId === item.id} onClick={() => deleteAppointment(item.id)}><Trash2 /> Sil</button>
                 </td>
               </tr>
-            ))}
-            {!visibleAppointments.length && <tr><td colSpan="4">Henüz başvuru yok. Public randevu formundan başvuru gelince burada görünecek.</td></tr>}
-          </tbody>
+              {aiSummary && (
+                <tr className="ai-history-row">
+                  <td colSpan="4">
+                    <div className="ai-summary-panel compact">
+                      <span>{aiSummary.provider}</span>
+                      <h3>Terapi Süreci Özeti</h3>
+                      <p>{aiSummary.summary}</p>
+                      <strong>Odak Alanları</strong>
+                      <ul>{(aiSummary.focusAreas || []).map((focus) => <li key={focus}>{focus}</li>)}</ul>
+                      <strong>Sonraki Seans İçin Öneriler</strong>
+                      <ul>{(aiSummary.nextSessionSuggestions || []).map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          );
+        })}
+        {!items.length && <tr><td colSpan="4">Bu bölümde kayıt yok.</td></tr>}
+      </tbody>
+    );
+  }
+
+  return (
+    <>
+      <div className="admin-title-row">
+        <h1>Başvurular</h1>
+      </div>
+      {actionError && <p className="form-error">{actionError}</p>}
+      {actionStatus && <p className="form-success">{actionStatus}</p>}
+      <div className="admin-card">
+        <h2>Yeni Başvurular</h2>
+        <table>
+          <thead><tr><th>Danışan</th><th>Hizmet</th><th>Tarih</th><th>İşlem</th></tr></thead>
+          <AppointmentRows items={newApplications} mode="new" />
+        </table>
+      </div>
+      <div className="admin-card">
+        <h2>Geçmiş Başvurular ve Aktif Süreçler</h2>
+        <table>
+          <thead><tr><th>Danışan</th><th>Hizmet</th><th>Tarih</th><th>İşlem</th></tr></thead>
+          <AppointmentRows items={historyApplications} mode="history" />
         </table>
       </div>
     </>
   );
 }
-
 function CalendarView({ appointments, token, refresh }) {
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -1167,6 +1226,11 @@ function SessionRoom({ token, appointments, refresh }) {
   const [sessionStatus, setSessionStatus] = useState('');
   const [aiSummary, setAiSummary] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [finishedAppointment, setFinishedAppointment] = useState(null);
+  const [followUpDate, setFollowUpDate] = useState(today);
+  const [followUpSlots, setFollowUpSlots] = useState([]);
+  const [followUpTime, setFollowUpTime] = useState('');
+  const [followUpLoading, setFollowUpLoading] = useState(false);
   const selected = selectable.find((item) => item.id === selectedId) || selectable[0];
 
   useEffect(() => {
@@ -1195,11 +1259,53 @@ function SessionRoom({ token, appointments, refresh }) {
     setNotes('');
   }
 
+  async function loadFollowUpSlots(date) {
+    setFollowUpDate(date);
+    setFollowUpTime('');
+    setFollowUpLoading(true);
+    try {
+      const data = await api(`/appointments/slots?date=${encodeURIComponent(date)}`, {}, token);
+      setFollowUpSlots(data.slots || []);
+    } catch (error) {
+      setSessionStatus(`Boş saatler alınamadı: ${error.message}`);
+      setFollowUpSlots([]);
+    } finally {
+      setFollowUpLoading(false);
+    }
+  }
+
   async function finishCurrentSession() {
     if (!selected) return;
+    const current = selected;
     if (notes.trim()) await saveNotes({ silent: true });
     setSessionRunning(false);
-    setSessionStatus('Seans bitirildi ve notlar kaydedildi. Terapi süreci açık bırakıldı.');
+    setElapsed(0);
+    await api(`/appointments/${current.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'session_done' }) }, token);
+    setFinishedAppointment(current);
+    setSelectedId('');
+    setSessionStatus('Seans bitirildi. Danışan bugünkü seans listesinden çıkarıldı; gelecek seansı aşağıdan planlayabilirsiniz.');
+    await refresh();
+    await loadFollowUpSlots(followUpDate);
+  }
+
+  async function planFollowUp() {
+    if (!finishedAppointment || !followUpDate || !followUpTime) return;
+    await api('/appointments/doctor-create', {
+      method: 'POST',
+      body: JSON.stringify({
+        sourceAppointmentId: finishedAppointment.id,
+        name: finishedAppointment.name,
+        service: finishedAppointment.service,
+        preferredDate: followUpDate,
+        preferredTime: followUpTime,
+        message: 'Önceki seans sonrası doktor tarafından planlanan takip seansı'
+      })
+    }, token);
+    setSessionStatus('Gelecek seans başarıyla planlandı.');
+    setFinishedAppointment(null);
+    setFollowUpTime('');
+    await refresh();
+    await loadFollowUpSlots(followUpDate);
   }
 
   async function analyzeWithAi() {
@@ -1209,10 +1315,10 @@ function SessionRoom({ token, appointments, refresh }) {
     try {
       const result = await api(`/sessions/summary/${selected.id}`, {
         method: 'POST',
-        body: JSON.stringify({ notes })
+        body: JSON.stringify({ notes: '' })
       }, token);
       setAiSummary(result.analysis);
-      setSessionStatus('Terapi süreci AI ile özetlendi. Önceki seans notları dahil edildi, danışan kimlik bilgisi AI isteğine gönderilmedi.');
+      setSessionStatus('Terapi süreci AI ile özetlendi. Yalnızca kaydedilmiş seans notları kullanıldı.');
     } catch (error) {
       setSessionStatus(error.message || 'Yapay zeka analizi oluşturulamadı.');
     } finally {
@@ -1221,14 +1327,18 @@ function SessionRoom({ token, appointments, refresh }) {
   }
 
   async function completeTherapy() {
-    if (!selected) return;
-    const confirmed = window.confirm('Bu işlem terapi sürecini tamamen tamamlandı yapar ve danışana yorum bağlantısı maili göndermeyi dener. Devam edilsin mi?');
-    if (!confirmed) return;
-    if (notes.trim()) await saveNotes({ silent: true });
+    if (!selected && !finishedAppointment) return;
+    const target = selected || finishedAppointment;
+    const first = window.confirm('Terapi sürecini tamamen sonlandırmak üzeresiniz. Bu işlem normal seans bitirme değildir. Devam edilsin mi?');
+    if (!first) return;
+    const second = window.confirm('Son onay: Terapi süreci kapatılsın ve danışana yorum maili gönderilmeye çalışılsın mı?');
+    if (!second) return;
+    if (selected && notes.trim()) await saveNotes({ silent: true });
     setSessionRunning(false);
-    await api(`/appointments/${selected.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) }, token);
+    await api(`/appointments/${target.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) }, token);
     await refresh();
-    setSessionStatus('Terapi süreci tamamlandı. SMTP bilgileri tanımlıysa danışana yorum bağlantısı içeren e-posta gönderildi.');
+    setFinishedAppointment(null);
+    setSessionStatus('Terapi süreci tamamen kapatıldı. SMTP bilgileri tanımlıysa danışana yorum bağlantısı içeren e-posta gönderildi.');
   }
 
   return (
@@ -1236,13 +1346,13 @@ function SessionRoom({ token, appointments, refresh }) {
       <div className="admin-title-row">
         <div>
           <h1>Seans Odası</h1>
-          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini, notlarını ve geçmiş notlara dayalı AI terapi özetini bu ekrandan yönetir.</p>
+          <p>Bugünkü onaylanmış seansı başlatın, not alın, seansı bitirin ve gerekirse takip seansı planlayın.</p>
         </div>
         <div className={sessionRunning ? 'session-timer running' : 'session-timer'}>
           <Clock /> {formatDuration(elapsed)}
         </div>
       </div>
-      {!selected && (
+      {!selected && !finishedAppointment && (
         <div className="session-break-card">
           <strong>Seans arası modu aktif</strong>
           <p>Bugün onaylanmış seans yok. Seans odası sadece bugün yapılacak onaylı görüşmeler için aktif olur.</p>
@@ -1264,21 +1374,15 @@ function SessionRoom({ token, appointments, refresh }) {
               <p><strong>Hizmet:</strong> {selected.service}</p>
               <p><strong>Başvuru Notu:</strong> {selected.message || 'Not yok'}</p>
             </div>
-          ) : <p>Bugün onaylanmış seans yok.</p>}
+          ) : <p>Bugün onaylanmış aktif seans yok.</p>}
           {aiSummary && (
             <div className="ai-summary-panel">
               <span>{aiSummary.provider}</span>
               <h3>Terapi Süreci Özeti</h3>
               <p>{aiSummary.summary}</p>
               <div className="ai-summary-grid">
-                <div>
-                  <strong>Takip Durumu</strong>
-                  <p>{aiSummary.riskLevel}</p>
-                </div>
-                <div>
-                  <strong>Gizlilik</strong>
-                  <p>{aiSummary.privacyNote}</p>
-                </div>
+                <div><strong>Takip Durumu</strong><p>{aiSummary.riskLevel}</p></div>
+                <div><strong>Gizlilik</strong><p>{aiSummary.privacyNote}</p></div>
               </div>
               <strong>Odak Alanları</strong>
               <ul>{(aiSummary.focusAreas || []).map((item) => <li key={item}>{item}</li>)}</ul>
@@ -1298,21 +1402,38 @@ function SessionRoom({ token, appointments, refresh }) {
               <Play /> {sessionRunning ? 'Duraklat' : 'Seansı Başlat'}
             </button>
             <button className="outline-pill" disabled={!selected || elapsed === 0} onClick={() => setElapsed(0)}>Sıfırla</button>
-            <button className="outline-pill" disabled={!selected || elapsed === 0} onClick={finishCurrentSession}>Seansı Bitir</button>
+            <button className="success-button" disabled={!selected || elapsed === 0} onClick={finishCurrentSession}>Seansı Bitir</button>
           </div>
           <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen notlar doktor panelinde saklanır ve AI özeti için kullanılabilir.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="session-secondary-actions">
             <button className="success-button" disabled={!selected || !notes.trim()} onClick={() => saveNotes()}>Notu Kaydet</button>
-            <button className="outline-pill" disabled={!selected || aiLoading} onClick={analyzeWithAi}>{aiLoading ? 'AI Analiz Ediyor...' : 'Terapiyi Özetle'}</button>
+            <button className="outline-pill" disabled={!selected || aiLoading} onClick={analyzeWithAi}>{aiLoading ? 'AI Analiz Ediyor...' : 'Kaydedilmiş Notlardan Terapiyi Özetle'}</button>
           </div>
-          <p className="session-action-hint">Seansı bitirmek yalnızca bugünkü görüşmeyi kapatır. Terapi sürecini tamamen kapatma işlemi aşağıdaki ayrı bölümde tutulur.</p>
-          <details className="therapy-complete-panel">
-            <summary>Gelişmiş işlem: tüm terapi sürecini kapat</summary>
-            <p>Bu seçenek normal seans bitirme için değildir. Yalnızca danışanın terapi süreci tamamen bittiyse kullanılmalıdır. İşlem sonrası danışana yorum bağlantısı içeren mail gönderilmeye çalışılır.</p>
-            <button className="danger-button" disabled={!selected} onClick={completeTherapy}>Terapiyi Tamamen Sonlandır ve Mail Gönder</button>
-          </details>
+          <p className="session-action-hint">AI özeti yalnızca kaydedilmiş seans notlarından üretilir. Not yoksa sistem özet oluşturmaz.</p>
           {sessionStatus && <p className="form-success">{sessionStatus}</p>}
         </div>
+      </div>
+
+      {finishedAppointment && (
+        <div className="admin-card follow-up-panel">
+          <h2>Gelecek Seansı Planla</h2>
+          <p>{finishedAppointment.name} için yeni tarih ve boş saat seçin.</p>
+          <input type="date" min={today} value={followUpDate} onChange={(e) => loadFollowUpSlots(e.target.value)} />
+          <div className="slot-grid compact-slots">
+            {followUpLoading && <p>Saatler yükleniyor...</p>}
+            {!followUpLoading && followUpSlots.map((slot) => (
+              <button key={slot.time} disabled={!slot.available} className={followUpTime === slot.time ? 'active' : ''} onClick={() => setFollowUpTime(slot.time)}>
+                <strong>{slot.time}</strong>
+                <span>{slot.available ? 'Boş' : `Dolu - ${slot.appointment.codeName}`}</span>
+              </button>
+            ))}
+          </div>
+          <button className="primary-button" disabled={!followUpTime} onClick={planFollowUp}>Gelecek Seansı Kaydet</button>
+        </div>
+      )}
+
+      <div className="therapy-complete-footer">
+        <button className="danger-button" disabled={!selected && !finishedAppointment} onClick={completeTherapy}>Terapi Sürecini Tamamen Sonlandır</button>
       </div>
     </>
   );
@@ -1626,5 +1747,7 @@ function App() {
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+
+
 
 

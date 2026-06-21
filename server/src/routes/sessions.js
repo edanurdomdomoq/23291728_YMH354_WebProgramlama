@@ -26,14 +26,14 @@ router.post('/summary/:appointmentId', async (req, res) => {
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
   const normalizedEmail = String(appointment.email || '').trim().toLocaleLowerCase('tr-TR');
-  const normalizedName = String(appointment.name || '').trim().toLocaleLowerCase('tr-TR');
   const normalizedPhone = String(appointment.phone || '').replace(/\D/g, '');
+  const hasRealEmail = normalizedEmail && !normalizedEmail.endsWith('@local.test');
+  const hasRealPhone = normalizedPhone && normalizedPhone !== '0000000000';
   const relatedAppointmentIds = (db.appointments || [])
     .filter((item) => {
-      const sameEmail = normalizedEmail && String(item.email || '').trim().toLocaleLowerCase('tr-TR') === normalizedEmail;
-      const samePhone = normalizedPhone && String(item.phone || '').replace(/\D/g, '') === normalizedPhone;
-      const sameName = normalizedName && String(item.name || '').trim().toLocaleLowerCase('tr-TR') === normalizedName;
-      return sameEmail || samePhone || sameName || item.id === appointment.id;
+      const sameEmail = hasRealEmail && String(item.email || '').trim().toLocaleLowerCase('tr-TR') === normalizedEmail;
+      const samePhone = hasRealPhone && String(item.phone || '').replace(/\D/g, '') === normalizedPhone;
+      return sameEmail || samePhone || item.id === appointment.id;
     })
     .map((item) => item.id);
 
@@ -45,8 +45,8 @@ router.post('/summary/:appointmentId', async (req, res) => {
   const liveNotes = String(req.body?.notes || '').trim();
   const combinedNotes = [...savedNotes, liveNotes].filter(Boolean).join('\n---\n');
 
-  if (!combinedNotes.trim()) {
-    return res.status(400).json({ message: 'Analiz için önce seans notu girin veya kaydedin.' });
+  if (!combinedNotes.trim() || combinedNotes.replace(/\s+/g, ' ').trim().length < 20) {
+    return res.status(400).json({ message: 'AI özeti için bu danışana ait kaydedilmiş yeterli seans notu yok.' });
   }
 
   const analysis = await analyzeSessionNotes(combinedNotes);

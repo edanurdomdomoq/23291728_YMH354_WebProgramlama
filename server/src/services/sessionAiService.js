@@ -43,6 +43,8 @@ export async function analyzeSessionNotes(notes) {
     const prompt = [
       'Bir psikolog seans notunu Türkçe analiz et.',
       'Danışanın adı, telefonu veya e-postası yok. Kişisel veri üretme.',
+      'Yalnızca verilen anonim notlara dayan. Notta olmayan terapi türünü, ilişki durumunu, gelişimi veya risk bilgisini uydurma.',
+      'Notlar yetersizse bunu açıkça söyle ve kısa kal.',
       'Yalnızca JSON döndür: {"summary":"kısa klinik özet","riskLevel":"rutin takip veya yakın klinik takip önerilir","focusAreas":["alan"],"nextSessionSuggestions":["öneri"],"privacyNote":"kısa not"}',
       `Anonim seans notları: ${cleanedNotes}`
     ].join('\n');

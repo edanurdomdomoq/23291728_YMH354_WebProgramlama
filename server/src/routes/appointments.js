@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { readAppointments, readDb, writeDb } from '../services/database.js';
@@ -134,7 +134,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 router.post('/doctor-create', requireAuth, async (req, res) => {
-  const { name, service, preferredDate, preferredTime, message } = req.body;
+  const { name, service, preferredDate, preferredTime, message, sourceAppointmentId } = req.body;
   if (!name || name.trim().length < 2) return res.status(400).json({ message: 'Danışan adı soyadı zorunludur.' });
   if (!preferredDate || isPastDate(preferredDate)) return res.status(400).json({ message: 'Geçmiş tarihe seans oluşturulamaz.' });
   if (!preferredTime || !workingHours.includes(preferredTime)) return res.status(400).json({ message: 'Geçerli bir saat seçilmelidir.' });
@@ -144,15 +144,18 @@ router.post('/doctor-create', requireAuth, async (req, res) => {
     return res.status(409).json({ message: 'Bu saat dolu. Lütfen başka bir saat seçin.' });
   }
 
+  const sourceAppointment = sourceAppointmentId
+    ? (db.appointments || []).find((item) => item.id === sourceAppointmentId)
+    : null;
   const patientName = name.trim();
   const appointment = {
     id: nanoid(),
     codeName: patientName,
     name: patientName,
-    email: `manuel-${Date.now()}@local.test`,
-    phone: '0000000000',
-    service: service || 'Online Terapi',
-    message: message || 'Takvimden manuel oluşturulan seans',
+    email: sourceAppointment?.email || `manuel-${Date.now()}@local.test`,
+    phone: sourceAppointment?.phone || '0000000000',
+    service: service || sourceAppointment?.service || 'Online Terapi',
+    message: message || 'Doktor panelinden planlanan takip seansı',
     preferredDate,
     preferredTime,
     status: 'approved',
@@ -163,7 +166,6 @@ router.post('/doctor-create', requireAuth, async (req, res) => {
   await writeDb(db);
   res.status(201).json(appointment);
 });
-
 router.patch('/:id', requireAuth, async (req, res) => {
   const db = await readDb();
   const appointment = db.appointments.find((item) => item.id === req.params.id);
@@ -238,3 +240,4 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 
 export default router;
+

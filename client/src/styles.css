@@ -1616,6 +1616,33 @@ textarea { min-height: 130px; resize: vertical; }
 .therapy-complete-panel .danger-button {
   width: 100%;
 }
+.follow-up-panel {
+  display: grid;
+  gap: 14px;
+  border-color: rgba(34, 197, 139, 0.28);
+  background: linear-gradient(135deg, rgba(34, 197, 139, 0.08), rgba(17, 23, 33, 0.96));
+}
+.follow-up-panel input {
+  background: #0d1117;
+  border: 1px solid #252c38;
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px 14px;
+}
+.compact-slots {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.therapy-complete-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.therapy-complete-footer .danger-button {
+  opacity: 0.78;
+}
+.ai-summary-panel.compact {
+  margin: 8px 0;
+}
 .complete-button { margin-top: 14px; width: 100%; }
 .blog-admin-list div { display: grid; grid-template-columns: 72px 1fr auto auto auto; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid #252c38; }
 .blog-admin-list img {
