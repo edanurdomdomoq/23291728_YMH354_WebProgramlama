@@ -25,8 +25,21 @@ router.post('/summary/:appointmentId', async (req, res) => {
   const appointment = db.appointments.find((item) => item.id === req.params.appointmentId);
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
+  const normalizedEmail = String(appointment.email || '').trim().toLocaleLowerCase('tr-TR');
+  const normalizedName = String(appointment.name || '').trim().toLocaleLowerCase('tr-TR');
+  const normalizedPhone = String(appointment.phone || '').replace(/\D/g, '');
+  const relatedAppointmentIds = (db.appointments || [])
+    .filter((item) => {
+      const sameEmail = normalizedEmail && String(item.email || '').trim().toLocaleLowerCase('tr-TR') === normalizedEmail;
+      const samePhone = normalizedPhone && String(item.phone || '').replace(/\D/g, '') === normalizedPhone;
+      const sameName = normalizedName && String(item.name || '').trim().toLocaleLowerCase('tr-TR') === normalizedName;
+      return sameEmail || samePhone || sameName || item.id === appointment.id;
+    })
+    .map((item) => item.id);
+
   const savedNotes = (db.sessions || [])
-    .filter((item) => item.appointmentId === appointment.id)
+    .filter((item) => relatedAppointmentIds.includes(item.appointmentId))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     .map((item) => item.anonymousNotes)
     .filter(Boolean);
   const liveNotes = String(req.body?.notes || '').trim();
@@ -40,6 +53,7 @@ router.post('/summary/:appointmentId', async (req, res) => {
   res.json({
     appointmentId: appointment.id,
     patient: appointment.name,
+    sessionNoteCount: savedNotes.length + (liveNotes ? 1 : 0),
     privacy: 'AI isteğine danışanın kimlik bilgileri gönderilmez.',
     analysis
   });

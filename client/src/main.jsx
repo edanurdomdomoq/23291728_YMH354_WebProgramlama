@@ -1212,7 +1212,7 @@ function SessionRoom({ token, appointments, refresh }) {
         body: JSON.stringify({ notes })
       }, token);
       setAiSummary(result.analysis);
-      setSessionStatus('Yapay zeka özeti hazırlandı. Danışan kimlik bilgisi AI isteğine gönderilmedi.');
+      setSessionStatus('Terapi süreci AI ile özetlendi. Önceki seans notları dahil edildi, danışan kimlik bilgisi AI isteğine gönderilmedi.');
     } catch (error) {
       setSessionStatus(error.message || 'Yapay zeka analizi oluşturulamadı.');
     } finally {
@@ -1236,7 +1236,7 @@ function SessionRoom({ token, appointments, refresh }) {
       <div className="admin-title-row">
         <div>
           <h1>Seans Odası</h1>
-          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini, notlarını ve AI destekli özeti bu ekrandan yönetir.</p>
+          <p>Yalnızca bugün onaylanmış seanslar görünür. Doktor seans süresini, notlarını ve geçmiş notlara dayalı AI terapi özetini bu ekrandan yönetir.</p>
         </div>
         <div className={sessionRunning ? 'session-timer running' : 'session-timer'}>
           <Clock /> {formatDuration(elapsed)}
@@ -1268,7 +1268,7 @@ function SessionRoom({ token, appointments, refresh }) {
           {aiSummary && (
             <div className="ai-summary-panel">
               <span>{aiSummary.provider}</span>
-              <h3>AI Destekli Klinik Özet</h3>
+              <h3>Terapi Süreci Özeti</h3>
               <p>{aiSummary.summary}</p>
               <div className="ai-summary-grid">
                 <div>
@@ -1303,11 +1303,12 @@ function SessionRoom({ token, appointments, refresh }) {
           <textarea disabled={!selected || !sessionRunning} className={!selected || !sessionRunning ? 'disabled-note' : ''} placeholder={selected ? 'Seans sırasında not alın. Kaydedilen notlar doktor panelinde saklanır ve AI özeti için kullanılabilir.' : 'Bugün onaylı seans gelince aktif olur.'} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="session-secondary-actions">
             <button className="success-button" disabled={!selected || !notes.trim()} onClick={() => saveNotes()}>Notu Kaydet</button>
-            <button className="outline-pill" disabled={!selected || aiLoading} onClick={analyzeWithAi}>{aiLoading ? 'AI Analiz Ediyor...' : 'Yapay Zeka Özeti Al'}</button>
+            <button className="outline-pill" disabled={!selected || aiLoading} onClick={analyzeWithAi}>{aiLoading ? 'AI Analiz Ediyor...' : 'Terapiyi Özetle'}</button>
           </div>
+          <p className="session-action-hint">Seansı bitirmek yalnızca bugünkü görüşmeyi kapatır. Terapi sürecini tamamen kapatma işlemi aşağıdaki ayrı bölümde tutulur.</p>
           <details className="therapy-complete-panel">
-            <summary>Terapi sürecini sonlandırma</summary>
-            <p>Bu seçenek yalnızca danışanın terapi süreci tamamen bittiyse kullanılmalıdır. İşlem sonrası danışana yorum bağlantısı içeren mail gönderilmeye çalışılır.</p>
+            <summary>Gelişmiş işlem: tüm terapi sürecini kapat</summary>
+            <p>Bu seçenek normal seans bitirme için değildir. Yalnızca danışanın terapi süreci tamamen bittiyse kullanılmalıdır. İşlem sonrası danışana yorum bağlantısı içeren mail gönderilmeye çalışılır.</p>
             <button className="danger-button" disabled={!selected} onClick={completeTherapy}>Terapiyi Tamamen Sonlandır ve Mail Gönder</button>
           </details>
           {sessionStatus && <p className="form-success">{sessionStatus}</p>}

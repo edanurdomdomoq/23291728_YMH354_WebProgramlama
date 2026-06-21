@@ -1533,6 +1533,12 @@ textarea { min-height: 130px; resize: vertical; }
   flex-wrap: wrap;
   gap: 12px;
 }
+.session-action-hint {
+  margin: -4px 0 2px;
+  color: #95a3b8;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
 .session-break-card {
   border: 1px solid rgba(60, 131, 246, 0.4);
   border-radius: 20px;
