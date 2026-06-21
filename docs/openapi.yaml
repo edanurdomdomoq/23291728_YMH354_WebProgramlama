@@ -1,134 +1,20 @@
 openapi: 3.0.3
 info:
-  title: Klinik API
+  title: PsyLife API
   version: 1.0.0
-  description: YMH354 final projesi icin psikolog/danisan takip REST API dokumantasyonu.
+  description: Psikolog danışmanlık merkezi için randevu, dashboard, içerik, seans notu ve yorum yönetimi REST API dokümantasyonu.
 servers:
-  - url: http://localhost:5000/api
-paths:
-  /health:
-    get:
-      summary: API saglik kontrolu
-      responses:
-        "200":
-          description: API calisiyor
-  /auth/register:
-    post:
-      summary: Yeni kullanici/danisan kaydi
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, email, password]
-              properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-      responses:
-        "201":
-          description: Token ve kullanici bilgisi doner
-  /auth/login:
-    post:
-      summary: Kullanici girisi
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-      responses:
-        "200":
-          description: Token ve kullanici bilgisi doner
-  /tasks:
-    get:
-      summary: Danisan takip kayitlarini listeler
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Takip kaydi listesi
-    post:
-      summary: Yeni danisan takip kaydi olusturur
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RecordInput"
-      responses:
-        "201":
-          description: Olusturulan takip kaydi
-  /tasks/{id}:
-    patch:
-      summary: Takip kaydi gunceller
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Guncellenen takip kaydi
-    delete:
-      summary: Takip kaydi siler
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: Silindi
-  /dashboard:
-    get:
-      summary: Dashboard metriklerini getirir
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Ozet, destek alani, oncelik/risk ve son kayit verileri
-  /ai/study-plan:
-    post:
-      summary: Server-side AI iyi olus destek plani uretir
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [goal, level, weeklyHours]
-              properties:
-                goal:
-                  type: string
-                level:
-                  type: string
-                  enum: [beginner, intermediate, advanced]
-                weeklyHours:
-                  type: number
-      responses:
-        "201":
-          description: Uretilen AI destek plani kaydi
+  - url: http://localhost:5000
+    description: Yerel geliştirme sunucusu
+tags:
+  - name: Sistem
+  - name: Kimlik Doğrulama
+  - name: Public Site
+  - name: Randevular
+  - name: Dashboard
+  - name: Seanslar
+  - name: Yorumlar
+  - name: İçerik Yönetimi
 components:
   securitySchemes:
     bearerAuth:
@@ -136,19 +22,403 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    RecordInput:
+    Error:
       type: object
-      required: [title]
+      properties:
+        message:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        password:
+          type: string
+          example: "123456"
+    AppointmentCreate:
+      type: object
+      required: [name, email, phone, preferredDate, preferredTime]
+      properties:
+        name:
+          type: string
+          example: Postman Test
+        email:
+          type: string
+          example: postmantest@example.com
+        phone:
+          type: string
+          example: "05420000000"
+        service:
+          type: string
+          example: Online Terapi
+        preferredDate:
+          type: string
+          format: date
+          example: "2026-06-25"
+        preferredTime:
+          type: string
+          example: "10:00"
+        message:
+          type: string
+          example: İlk görüşme için başvuru.
+    Appointment:
+      allOf:
+        - $ref: '#/components/schemas/AppointmentCreate'
+        - type: object
+          properties:
+            id:
+              type: string
+            codeName:
+              type: string
+            status:
+              type: string
+              enum: [pending, approved, rejected, session_done, completed]
+            createdAt:
+              type: string
+              format: date-time
+    AppointmentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected, session_done, completed]
+        service:
+          type: string
+        preferredDate:
+          type: string
+          format: date
+        preferredTime:
+          type: string
+    BlogPost:
+      type: object
       properties:
         title:
           type: string
-        category:
+        excerpt:
           type: string
-          example: Duygu Gunlugu
-        priority:
+        image:
           type: string
-          enum: [low, medium, high]
-        dueDate:
+        date:
           type: string
-        estimatedHours:
-          type: number
+        published:
+          type: boolean
+    Service:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        icon:
+          type: string
+        published:
+          type: boolean
+    SessionNote:
+      type: object
+      required: [anonymousNotes]
+      properties:
+        anonymousNotes:
+          type: string
+          description: Doktorun kaydettiği anonim seans notu.
+    ReviewCreate:
+      type: object
+      required: [text]
+      properties:
+        appointmentId:
+          type: string
+        text:
+          type: string
+          example: Süreç boyunca kendimi güvende hissettim.
+paths:
+  /api/health:
+    get:
+      tags: [Sistem]
+      summary: API çalışma durumunu döndürür.
+      responses:
+        "200":
+          description: API aktif.
+  /api/auth/login:
+    post:
+      tags: [Kimlik Doğrulama]
+      summary: Doktor/admin girişi yapar ve JWT token üretir.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: Giriş başarılı.
+        "401":
+          description: Hatalı e-posta veya şifre.
+  /api/public/site:
+    get:
+      tags: [Public Site]
+      summary: Ana sayfada gösterilecek hizmet, blog ve yorum verilerini döndürür.
+      responses:
+        "200":
+          description: Public site verileri.
+  /api/appointments:
+    post:
+      tags: [Randevular]
+      summary: Ziyaretçi ilk görüşme başvurusu oluşturur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+      responses:
+        "201":
+          description: Başvuru oluşturuldu.
+        "400":
+          description: Form validasyonu başarısız.
+        "409":
+          description: Aynı kişi/e-posta veya dolu saat çakışması.
+    get:
+      tags: [Randevular]
+      summary: Tüm görünür başvuruları listeler.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Randevu listesi.
+  /api/appointments/slots:
+    get:
+      tags: [Randevular]
+      summary: Seçilen tarihteki boş/dolu randevu saatlerini döndürür.
+      parameters:
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Saat uygunluk listesi.
+  /api/appointments/doctor-create:
+    post:
+      tags: [Randevular]
+      summary: Doktor panelinden onaylı takip seansı oluşturur.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+      responses:
+        "201":
+          description: Seans oluşturuldu.
+  /api/appointments/{id}:
+    patch:
+      tags: [Randevular]
+      summary: Başvuru durumunu, tarihini, saatini veya hizmetini günceller.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentUpdate'
+      responses:
+        "200":
+          description: Başvuru güncellendi.
+        "404":
+          description: Başvuru bulunamadı.
+    delete:
+      tags: [Randevular]
+      summary: Başvuruyu ve ilişkili seans/yorum kayıtlarını siler.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Silindi.
+  /api/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Admin paneli için canlı özet, grafik ve tablo verilerini döndürür.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard metrikleri.
+  /api/sessions/today:
+    get:
+      tags: [Seanslar]
+      summary: Bugünün onaylanmış seanslarını döndürür.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Günlük seans listesi.
+  /api/sessions/{appointmentId}:
+    post:
+      tags: [Seanslar]
+      summary: Randevuya anonim seans notu kaydeder.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: appointmentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionNote'
+      responses:
+        "201":
+          description: Seans notu kaydedildi.
+  /api/sessions/summary/{appointmentId}:
+    post:
+      tags: [Seanslar]
+      summary: Kaydedilmiş anonim seans notlarından Gemini destekli terapi özeti üretir.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: appointmentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI seans özeti.
+        "400":
+          description: Kaydedilmiş yeterli not yok.
+  /api/reviews:
+    post:
+      tags: [Yorumlar]
+      summary: Danışan yorumunu kaydeder ve AI ile yıldız/özet analizi üretir.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+      responses:
+        "201":
+          description: Yorum kaydedildi.
+  /api/content/posts:
+    get:
+      tags: [İçerik Yönetimi]
+      summary: Blog yazılarını listeler.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Blog listesi.
+    post:
+      tags: [İçerik Yönetimi]
+      summary: Yeni blog yazısı oluşturur.
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogPost'
+      responses:
+        "201":
+          description: Blog oluşturuldu.
+  /api/content/posts/{id}:
+    patch:
+      tags: [İçerik Yönetimi]
+      summary: Blog yazısını günceller.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Blog güncellendi.
+    delete:
+      tags: [İçerik Yönetimi]
+      summary: Blog yazısını siler.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Silindi.
+  /api/content/services:
+    get:
+      tags: [İçerik Yönetimi]
+      summary: Hizmetleri listeler.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Hizmet listesi.
+    post:
+      tags: [İçerik Yönetimi]
+      summary: Yeni hizmet oluşturur.
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Service'
+      responses:
+        "201":
+          description: Hizmet oluşturuldu.
+  /api/content/services/{id}:
+    patch:
+      tags: [İçerik Yönetimi]
+      summary: Hizmeti günceller veya yayından kaldırır.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Hizmet güncellendi.
+    delete:
+      tags: [İçerik Yönetimi]
+      summary: Hizmeti siler.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Silindi.
