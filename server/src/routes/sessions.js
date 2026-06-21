@@ -42,19 +42,17 @@ router.post('/summary/:appointmentId', async (req, res) => {
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     .map((item) => item.anonymousNotes)
     .filter(Boolean);
-  const liveNotes = String(req.body?.notes || '').trim();
-  const combinedNotes = [...savedNotes, liveNotes].filter(Boolean).join('\n---\n');
+  const combinedNotes = savedNotes.join('\n---\n');
 
-  if (!combinedNotes.trim() || combinedNotes.replace(/\s+/g, ' ').trim().length < 20) {
+  if (!savedNotes.length || !combinedNotes.trim() || combinedNotes.replace(/\s+/g, ' ').trim().length < 20) {
     return res.status(400).json({ message: 'AI özeti için bu danışana ait kaydedilmiş yeterli seans notu yok.' });
   }
 
   const analysis = await analyzeSessionNotes(combinedNotes);
   res.json({
     appointmentId: appointment.id,
-    patient: appointment.name,
-    sessionNoteCount: savedNotes.length + (liveNotes ? 1 : 0),
-    privacy: 'AI isteğine danışanın kimlik bilgileri gönderilmez.',
+    sessionNoteCount: savedNotes.length,
+    privacy: 'AI isteğine yalnızca veritabanına kaydedilmiş anonim seans notları gönderilir.',
     analysis
   });
 });

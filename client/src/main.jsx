@@ -964,9 +964,14 @@ function Applications({ appointments, token, refresh }) {
   async function readAiSummary(id) {
     setActionError('');
     setActionStatus('');
+    setAiSummaryById((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
     setAiBusyId(id);
     try {
-      const result = await api(`/sessions/summary/${id}`, { method: 'POST', body: JSON.stringify({ notes: '' }) }, token);
+      const result = await api(`/sessions/summary/${id}`, { method: 'POST', body: JSON.stringify({}) }, token);
       setAiSummaryById((current) => ({ ...current, [id]: result.analysis }));
     } catch (error) {
       setActionError(error.message || 'Bu danışan için AI özeti oluşturulamadı.');
@@ -1312,10 +1317,11 @@ function SessionRoom({ token, appointments, refresh }) {
     if (!selected) return;
     setAiLoading(true);
     setSessionStatus('');
+    setAiSummary(null);
     try {
       const result = await api(`/sessions/summary/${selected.id}`, {
         method: 'POST',
-        body: JSON.stringify({ notes: '' })
+        body: JSON.stringify({})
       }, token);
       setAiSummary(result.analysis);
       setSessionStatus('Terapi süreci AI ile özetlendi. Yalnızca kaydedilmiş seans notları kullanıldı.');
