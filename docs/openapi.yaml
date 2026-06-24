@@ -49,7 +49,7 @@ components:
           example: postmantest@example.com
         phone:
           type: string
-          example: "05420000000"
+          example: "05462261143"
         service:
           type: string
           example: Online Terapi

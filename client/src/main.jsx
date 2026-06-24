@@ -720,7 +720,7 @@ function Footer() {
       </div>
       <div>
         <h4>İletişim</h4>
-        <span><Phone /> 0542 104 88 74</span>
+        <span><Phone /> +90 546 226 11 43</span>
         <span><Mail /> Lowland Business, Yeşilova Mahallesi, Prof. Dr. Necmettin Erbakan Bulvarı, 4002. Cad. Kat:7 No:31, 06790 Etimesgut/Ankara</span>
       </div>
     </footer>
@@ -1824,8 +1824,8 @@ function App() {
       <AppointmentForm services={services} />
       <LocationMap />
       <Footer />
-      <a className="floating-call" href="tel:+905421048874"><Phone /></a>
-      <a className="floating-whatsapp" href="https://wa.me/905421048874"><MessageCircle /></a>
+      <a className="floating-call" href="tel:+905462261143"><Phone /></a>
+      <a className="floating-whatsapp" href="https://wa.me/905462261143"><MessageCircle /></a>
     </>
   );
 }
