@@ -2051,6 +2051,189 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   .calendar-grid button { min-height: 78px; }
 }
 
+@media (min-width: 641px) and (max-width: 1180px) {
+  .admin-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 14px;
+    height: auto;
+    padding: 16px 22px;
+    background: rgba(13, 17, 23, 0.96);
+    backdrop-filter: blur(14px);
+  }
+
+  .admin-logo {
+    min-width: 160px;
+    margin: 0;
+    font-size: 1.22rem;
+    white-space: nowrap;
+  }
+
+  .admin-sidebar button {
+    min-width: 150px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 16px;
+    white-space: nowrap;
+  }
+
+  .admin-sidebar button:not(:last-child) {
+    margin-right: 0;
+  }
+
+  .admin-sidebar {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #3c83f6 #101722;
+  }
+
+  .admin-content {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+    padding: 34px 28px 56px;
+  }
+
+  .admin-content h1 {
+    font-size: clamp(2rem, 4vw, 2.55rem);
+  }
+
+  .dashboard-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+
+  .admin-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .admin-stats article,
+  .admin-card {
+    border-radius: 18px;
+    padding: 20px;
+  }
+
+  .admin-grid,
+  .dashboard-mosaic,
+  .calendar-layout,
+  .session-room-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .session-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .admin-card table {
+    min-width: 760px;
+  }
+
+  .admin-card th,
+  .admin-card td {
+    padding: 14px 12px;
+  }
+
+  .table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .table-actions button {
+    min-height: 38px;
+    padding-inline: 14px;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(7, minmax(78px, 1fr));
+    gap: 8px;
+  }
+
+  .calendar-grid button {
+    min-height: 92px;
+    padding: 10px;
+  }
+
+  .month-strip {
+    grid-template-columns: repeat(12, minmax(50px, 1fr));
+  }
+
+  .blog-admin-list div {
+    grid-template-columns: 64px minmax(220px, 1fr) auto auto auto;
+    gap: 14px;
+  }
+
+  .services-admin-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .services-admin-list article {
+    grid-template-columns: 42px 1fr;
+  }
+
+  .session-focus-card,
+  .session-notes-card {
+    min-height: auto;
+  }
+
+  .session-notes-card textarea {
+    min-height: 260px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .admin-sidebar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .admin-logo {
+    width: max-content;
+  }
+
+  .admin-sidebar button {
+    min-width: 142px;
+  }
+
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-stats article:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .session-grid,
+  .services-admin-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-title-row {
+    display: grid;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(4, minmax(86px, 1fr));
+  }
+
+  .month-strip {
+    grid-template-columns: repeat(6, minmax(54px, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   html, body, #root {
     width: 100%;
