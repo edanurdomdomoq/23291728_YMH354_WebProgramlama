@@ -198,17 +198,17 @@ function Hero({ onAppointment }) {
   );
 }
 function Services({ services }) {
-  const sliderServices = services.length > 1 ? [...services, ...services] : services;
+  const sliderServices = services;
 
   return (
     <section className="services-section">
       <p className="quote">"Değişim Bir Adımla Başlar."</p>
       <div className="service-slider" aria-label="Hizmetler">
         <div className="service-track">
-        {sliderServices.map((service, index) => {
+        {sliderServices.map((service) => {
           const Icon = iconMap[service.icon] || HeartHandshake;
           return (
-            <article className="service-card" key={`${service.id}-${index}`}>
+            <article className="service-card" key={service.id || service.title}>
               <Icon />
               <h3>{service.title}</h3>
               <p>{service.summary}</p>
@@ -223,7 +223,26 @@ function Services({ services }) {
 }
 
 function About() {
-  const areas = ['Anksiyete ve Kaygı Bozuklukları', 'Depresyon ve duygudurum', 'Travma ve ilişki', 'Özgüven ve öz şefkat', 'Stres yönetimi', 'İlişki ve İletişim Problemleri'];
+  const areas = [
+    'Depresyon',
+    'Davranış Bozuklukları',
+    'Panik Atak',
+    'Majör Depresif Bozukluk',
+    'Stres',
+    'Obsesif-Kompulsif Bozukluk',
+    'Sosyal Fobi',
+    'Yeme Bozuklukları',
+    'Sınav Kaygısı',
+    'Aile İçi İletişim Sorunları',
+    'Travma',
+    'Travma Sonrası Stres Bozukluğu',
+    'İlişki Problemleri',
+    'Özgül Fobi',
+    'Panik Bozukluğu',
+    'Kişilerarası İlişkilerde Bozukluklar',
+    'Dikkat Eksikliği',
+    'Hiperaktivite Bozukluğu'
+  ];
   return (
     <section id="hakkimda" className="about-section">
       <div className="portrait-wrap">
@@ -233,7 +252,7 @@ function About() {
         <span className="eyebrow">Tanışalım</span>
         <h2>Hikayeniz, dinlenmeyi hak ediyor.</h2>
         <p>
-          Sibel Domdomoğulları, 2024 yılında TOBB Ekonomi ve Teknoloji Üniversitesi Psikoloji Bölümü’nden mezun olmuştur. Öğrencilik hayatı boyunca psikolojinin farklı alanlarında kendini geliştirmeye önem vermiş, mesleki donanımını çeşitli saha deneyimleriyle güçlendirmiştir.
+          <strong className="accent-name">Sibel Domdomoğulları</strong>, 2024 yılında TOBB Ekonomi ve Teknoloji Üniversitesi Psikoloji Bölümü’nden mezun olmuştur. Öğrencilik hayatı boyunca psikolojinin farklı alanlarında kendini geliştirmeye önem vermiş, mesleki donanımını çeşitli saha deneyimleriyle güçlendirmiştir.
 
 Psikolojinin alt dallarına bütüncül bir bakış açısı kazanmak amacıyla Adalet Bakanlığı bünyesinde; mahkumlar ile kadın ve çocuk cezaevlerinde bulunan bireylerle çalışmalar yürütmüştür. Bu süreçte farklı yaşam öykülerine sahip bireylerle çalışarak güçlü bir gözlem ve değerlendirme becerisi edinmiştir.
 
@@ -251,6 +270,11 @@ Ergen ve yetişkinlerle; Bilişsel Davranışçı Terapi, Şema Terapi, Aile ve 
 }
 
 function BlogPreview({ posts }) {
+  const [selectedPost, setSelectedPost] = useState(null);
+  const selectedContent = selectedPost
+    ? String(selectedPost.content || selectedPost.body || selectedPost.excerpt || '').split(/\n+/).filter(Boolean)
+    : [];
+
   return (
     <section id="blog" className="blog-section">
       <div className="section-title">
@@ -265,11 +289,42 @@ function BlogPreview({ posts }) {
               <span>{post.date}</span>
               <h3>{post.title}</h3>
               <p>{post.excerpt}</p>
-              <a href="#blog">Yazıyı Oku</a>
+              <button className="text-link" type="button" onClick={() => setSelectedPost(post)}>Yazıyı Oku</button>
             </div>
           </article>
         ))}
       </div>
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            className="blog-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedPost(null)}
+          >
+            <motion.article
+              className="blog-modal"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button className="blog-modal-close" type="button" onClick={() => setSelectedPost(null)} aria-label="Blog yazısını kapat">×</button>
+              <img src={selectedPost.image} alt={selectedPost.title} />
+              <div className="blog-modal-content">
+                <span>{selectedPost.date}</span>
+                <h2>{selectedPost.title}</h2>
+                {selectedContent.length ? (
+                  selectedContent.map((paragraph, index) => <p key={`${selectedPost.id}-paragraph-${index}`}>{paragraph}</p>)
+                ) : (
+                  <p>Bu yazı için henüz içerik eklenmemiş.</p>
+                )}
+              </div>
+            </motion.article>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -502,8 +557,8 @@ function Testimonials({ testimonials }) {
       </div>
       <div className="testimonial-slider" aria-label="Danışan yorumları">
         <div className="testimonial-track">
-        {[...testimonials, ...testimonials].map((item, index) => (
-          <article className="testimonial-card" key={`${item.name}-${index}`}>
+        {testimonials.map((item, index) => (
+          <article className="testimonial-card" key={item.id || `${item.name}-${index}`}>
             <strong>{'★'.repeat(item.rating)} / 5 Memnuniyet</strong>
             <p>"{item.text}"</p>
             <span>- {item.name}</span>
@@ -627,6 +682,28 @@ function AppointmentForm({ services }) {
   );
 }
 
+function LocationMap() {
+  const address = 'Lowland Business, Yeşilova Mahallesi, Prof. Dr. Necmettin Erbakan Bulvarı, 4002. Cad. Kat:7 No:31, 06790 Etimesgut/Ankara';
+
+  return (
+    <section className="map-section" id="konum">
+      <div className="section-title">
+        <span className="eyebrow">Konum</span>
+        <h2>Etimesgut / Ankara</h2>
+        <p>{address}</p>
+      </div>
+      <div className="map-card" aria-label="Etimesgut Ankara haritası">
+        <iframe
+          title="Sibel Domdomoğulları Danışmanlık Merkezi Etimesgut Ankara konumu"
+          src="https://www.google.com/maps?q=Lowland%20Business%2C%20Ye%C5%9Filova%20Mahallesi%2C%20Prof.%20Dr.%20Necmettin%20Erbakan%20Bulvar%C4%B1%2C%204002.%20Cad.%20Kat%3A7%20No%3A31%2C%2006790%20Etimesgut%2FAnkara&output=embed"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+    </section>
+  );
+}
+
 function Footer() {
   return (
     <footer className="site-footer">
@@ -644,7 +721,7 @@ function Footer() {
       <div>
         <h4>İletişim</h4>
         <span><Phone /> 0542 104 88 74</span>
-        <span><Mail /> Ankara / Türkiye</span>
+        <span><Mail /> Lowland Business, Yeşilova Mahallesi, Prof. Dr. Necmettin Erbakan Bulvarı, 4002. Cad. Kat:7 No:31, 06790 Etimesgut/Ankara</span>
       </div>
     </footer>
   );
@@ -1745,6 +1822,7 @@ function App() {
       <SocialShowcase />
       <Testimonials testimonials={site.testimonials} />
       <AppointmentForm services={services} />
+      <LocationMap />
       <Footer />
       <a className="floating-call" href="tel:+905421048874"><Phone /></a>
       <a className="floating-whatsapp" href="https://wa.me/905421048874"><MessageCircle /></a>
