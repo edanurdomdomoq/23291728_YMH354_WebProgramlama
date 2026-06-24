@@ -1785,6 +1785,17 @@ textarea { min-height: 130px; resize: vertical; }
   display: grid;
   gap: 12px;
 }
+.content-form label {
+  display: grid;
+  gap: 8px;
+}
+.content-form label span {
+  color: #95a3b8;
+  font-weight: 800;
+}
+.account-settings-form {
+  max-width: 720px;
+}
 .content-form input,
 .content-form textarea,
 .content-form select,

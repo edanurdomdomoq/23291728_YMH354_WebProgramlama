@@ -778,7 +778,7 @@ function ReviewPage() {
   );
 }
 function AuthPanel({ auth, onClose }) {
-  const [form, setForm] = useState({ email: 'admin@mindcare.test', password: '123456' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
   async function submit(event) {
@@ -799,9 +799,9 @@ function AuthPanel({ auth, onClose }) {
         <button type="button" className="close-button" onClick={onClose}>x</button>
         <Lock />
         <h2>Doktor Girişi</h2>
-        <p>Bu alan sadece veritabanında kayıtlı doktor/admin kullanıcısı ile açılır.</p>
-        <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        <p>Bu alan sadece veritabanında kayıtlı doktor hesabı ile açılır.</p>
+        <input type="email" placeholder="Doktor e-postası" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <input type="password" placeholder="Şifre" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         {error && <p className="form-error">{error}</p>}
         <button className="primary-button">Panele Gir</button>
       </form>
@@ -860,6 +860,7 @@ function AdminShell({ auth }) {
     ['session', 'Seans Odası', Video],
     ['blog', 'Blog Yönetimi', FileText],
     ['services', 'Hizmetler', HeartHandshake],
+    ['account', 'Hesap Ayarları', UserRound],
   ];
 
   return (
@@ -881,8 +882,92 @@ function AdminShell({ auth }) {
         {view === 'session' && <SessionRoom token={token} appointments={appointments} refresh={refresh} />}
         {view === 'blog' && <BlogManager posts={posts} token={token} refresh={refresh} />}
         {view === 'services' && <ServicesManager services={adminServices} token={token} refresh={refresh} />}
+        {view === 'account' && <AccountSettings auth={auth} />}
       </section>
     </main>
+  );
+}
+
+function AccountSettings({ auth }) {
+  const [form, setForm] = useState({
+    name: auth.session?.user?.name || '',
+    email: auth.session?.user?.email || '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+
+  async function submit(event) {
+    event.preventDefault();
+    setStatus('');
+    setError('');
+
+    if (form.newPassword && form.newPassword !== form.confirmPassword) {
+      setError('Yeni şifre ve tekrar alanı aynı olmalıdır.');
+      return;
+    }
+
+    try {
+      const data = await api('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword
+        })
+      }, auth.session.token);
+      auth.save(data);
+      setForm((current) => ({
+        ...current,
+        name: data.user.name,
+        email: data.user.email,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+      setStatus('Doktor hesabı güncellendi. Sonraki girişte yeni bilgiler kullanılacak.');
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <>
+      <div className="admin-title-row">
+        <div>
+          <h1>Hesap Ayarları</h1>
+          <p>Doktor giriş mailini ve şifresini buradan güvenli şekilde güncelleyin.</p>
+        </div>
+      </div>
+      <form className="admin-card content-form account-settings-form" onSubmit={submit}>
+        <label>
+          <span>Doktor adı</span>
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </label>
+        <label>
+          <span>Giriş e-postası</span>
+          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        </label>
+        <label>
+          <span>Mevcut şifre</span>
+          <input type="password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
+        </label>
+        <label>
+          <span>Yeni şifre</span>
+          <input type="password" placeholder="Değiştirmeyecekseniz boş bırakın" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
+        </label>
+        <label>
+          <span>Yeni şifre tekrar</span>
+          <input type="password" placeholder="Değiştirmeyecekseniz boş bırakın" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        {status && <p className="form-success">{status}</p>}
+        <button className="primary-button">Hesabı Güncelle</button>
+      </form>
+    </>
   );
 }
 

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { readDb, writeDb } from '../services/database.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -82,6 +83,64 @@ router.post('/login', async (req, res) => {
   }
 
   user.role ||= 'doctor';
+  res.json({
+    token: createToken(user),
+    user: publicUser(user)
+  });
+});
+
+router.get('/me', requireAuth, async (req, res) => {
+  const db = await readDb();
+  const user = db.users.find((item) => item.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: 'Doktor hesabı bulunamadı.' });
+  }
+
+  res.json({ user: publicUser(user) });
+});
+
+router.patch('/profile', requireAuth, async (req, res) => {
+  const { name, email, currentPassword, newPassword } = req.body;
+  const db = await readDb();
+  const user = db.users.find((item) => item.id === req.user.id);
+
+  if (!user) {
+    return res.status(404).json({ message: 'Doktor hesabı bulunamadı.' });
+  }
+
+  if (!(await bcrypt.compare(currentPassword || '', user.passwordHash))) {
+    return res.status(401).json({ message: 'Mevcut şifre hatalı.' });
+  }
+
+  const nextName = String(name || '').trim();
+  const nextEmail = String(email || '').trim().toLowerCase();
+
+  if (nextName.length < 2) {
+    return res.status(400).json({ message: 'Ad soyad en az 2 karakter olmalıdır.' });
+  }
+
+  if (!/^\S+@\S+\.\S+$/.test(nextEmail)) {
+    return res.status(400).json({ message: 'Geçerli bir e-posta adresi girin.' });
+  }
+
+  const emailOwner = db.users.find((item) => item.email.toLowerCase() === nextEmail && item.id !== user.id);
+  if (emailOwner) {
+    return res.status(409).json({ message: 'Bu e-posta başka bir doktor hesabında kullanılıyor.' });
+  }
+
+  if (newPassword && newPassword.length < 6) {
+    return res.status(400).json({ message: 'Yeni şifre en az 6 karakter olmalıdır.' });
+  }
+
+  user.name = nextName;
+  user.email = nextEmail;
+  if (newPassword) {
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+  }
+  user.updatedAt = new Date().toISOString();
+
+  await writeDb(db);
+
   res.json({
     token: createToken(user),
     user: publicUser(user)
